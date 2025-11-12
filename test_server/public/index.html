@@ -111,7 +111,7 @@
 		margin-bottom: 8px;
 	}
 	.place-detail-photo {
-		margin-top: 40px;
+		margin-top: 10px;
 		width: 100%;
 		height: 162px;
 		background: #f9f9f9;
@@ -123,6 +123,71 @@
 		font-family: 'Inter', sans-serif;
 		font-size: 14px;
 		border: 1px solid #e5e5e5;
+	}
+	.place-detail-accessibility {
+		margin-top: 16px;
+		margin-bottom: 0;
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		font-family: 'Inter', sans-serif;
+		font-size: 14px;
+		color: #666;
+	}
+	.place-detail-accessibility img {
+		width: 20px;
+		height: 20px;
+		flex-shrink: 0;
+	}
+	.place-detail-accessibility span {
+		display: flex;
+		align-items: center;
+		gap: 2px;
+	}
+	.place-detail-accessibility .check-icon {
+		width: 16px;
+		height: 16px;
+		flex-shrink: 0;
+		transform: translateY(0.5px);
+	}
+	.place-detail-tabs {
+		margin-top: 10px;
+		margin-bottom: 1px;
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		border-top: 1px solid #e5e5e5;
+		border-bottom: 1px solid #e5e5e5;
+		padding: 1px 0;
+		margin-left: -20px;
+		margin-right: -20px;
+		padding-left: 20px;
+		padding-right: 20px;
+	}
+	.place-detail-tab {
+		font-family: 'Inter', sans-serif;
+		font-size: 14px;
+		color: #999;
+		cursor: pointer;
+		padding: 8px 12px;
+		transition: all 0.2s;
+		user-select: none;
+	}
+	.place-detail-tab:hover {
+		color: #666;
+	}
+	.place-detail-tab.active {
+		color: #333;
+		font-weight: 700;
+	}
+	.place-detail-content {
+		margin-top: 12px;
+	}
+	.tab-content {
+		display: none;
+	}
+	.tab-content.active {
+		display: block;
 	}
 	.place-detail-close {
 		cursor: pointer;
@@ -139,15 +204,22 @@
 		display: flex;
 		flex-direction: column;
 		gap: 10px;
-		margin-top: 12px;
+		margin-top: 0;
 		font-family: 'Inter', sans-serif;
 		font-size: 14px;
 		color: #666;
 	}
 	.place-detail-info-item {
-		display: flex;
-		align-items: flex-start;
+		display: grid;
+		grid-template-columns: 20px 1fr;
 		gap: 8px;
+		align-items: flex-start;
+	}
+	.place-detail-info-item span:first-child {
+		text-align: center;
+	}
+	.place-detail-info-item span:last-child {
+		text-align: left;
 	}
 	.place-detail-icon {
 		width: 16px;
@@ -312,18 +384,54 @@
 			</div>
 			<div class="place-detail-close" id="placeDetailClose">×</div>
 		</div>
-		<div class="place-detail-info">
-			<div class="place-detail-info-item">
-				<span>📍</span>
-				<span id="placeAddress">주소</span>
-			</div>
-			<div class="place-detail-info-item">
-				<span>📞</span>
-				<span id="placePhone">전화번호</span>
-			</div>
-		</div>
 		<div class="place-detail-photo" id="placePhoto">
 			사진 준비중
+		</div>
+		<div class="place-detail-accessibility" id="placeAccessibility">
+			<img src="/img/physical-disability.svg" alt="접근성" />
+			<span>
+				접근성 정보 준비중
+				<img src="/img/check-green.png" alt="확인" class="check-icon" id="checkIcon" style="display: none;" />
+			</span>
+		</div>
+		<div class="place-detail-tabs">
+			<div class="place-detail-tab active" data-tab="home">홈</div>
+			<div class="place-detail-tab" data-tab="photo">사진</div>
+			<div class="place-detail-tab" data-tab="review">리뷰</div>
+			<div class="place-detail-tab" data-tab="blog">블로그</div>
+		</div>
+		<div class="place-detail-content">
+			<!-- 홈 탭 컨텐츠 -->
+			<div class="tab-content active" id="tab-home">
+				<div class="place-detail-info">
+					<div class="place-detail-info-item">
+						<span>📍</span>
+						<span id="placeAddress">주소</span>
+					</div>
+					<div class="place-detail-info-item">
+						<span>📞</span>
+						<span id="placePhone">전화번호</span>
+					</div>
+				</div>
+			</div>
+			<!-- 사진 탭 컨텐츠 -->
+			<div class="tab-content" id="tab-photo">
+				<div style="padding: 20px; text-align: center; color: #999;">
+					사진 정보 준비중
+				</div>
+			</div>
+			<!-- 리뷰 탭 컨텐츠 -->
+			<div class="tab-content" id="tab-review">
+				<div style="padding: 20px; text-align: center; color: #999;">
+					리뷰 정보 준비중
+				</div>
+			</div>
+			<!-- 블로그 탭 컨텐츠 -->
+			<div class="tab-content" id="tab-blog">
+				<div style="padding: 20px; text-align: center; color: #999;">
+					블로그 정보 준비중
+				</div>
+			</div>
 		</div>
 	</div>
 	<div class="search-results" id="searchResults" style="display: none;">
@@ -346,7 +454,7 @@
 	</div>
 	<div id="map"></div>
 
-	<script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey=01785b9a288ab46417b78a3790ac85c5&libraries=services"></script>
+	<script type="text/javascript" src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=01785b9a288ab46417b78a3790ac85c5&libraries=services"></script>
 	<script>
 		var container = document.getElementById('map');
 		var options = {
@@ -520,11 +628,16 @@ function searchPlaces(keyword, category) {
 	var reviewText = reviewCount >= 1000 ? '리뷰 999+' : '리뷰 ' + reviewCount;
 	document.getElementById('placeReviews').textContent = reviewText;
 		
-		// 주소와 전화번호
-		document.getElementById('placeAddress').textContent = place.address_name || place.road_address_name || '주소 정보 없음';
-		document.getElementById('placePhone').textContent = place.phone || '전화번호 정보 없음';
-		
-		// 선택된 마커를 제외한 모든 마커 숨기기
+	// 주소와 전화번호
+	document.getElementById('placeAddress').textContent = place.address_name || place.road_address_name || '주소 정보 없음';
+	document.getElementById('placePhone').textContent = place.phone || '전화번호 정보 없음';
+	
+	// 접근성 체크 아이콘 랜덤 표시 (50% 확률)
+	var showCheck = Math.random() < 0.5;
+	document.getElementById('checkIcon').style.display = showCheck ? 'block' : 'none';
+	console.log('체크 아이콘 표시:', showCheck);
+	
+	// 선택된 마커를 제외한 모든 마커 숨기기
 		markers.forEach(marker => {
 			if (marker.placeData && 
 				marker.placeData.place_name === place.place_name && 
@@ -565,11 +678,11 @@ function searchPlaces(keyword, category) {
 				map.setCenter(new kakao.maps.LatLng(place.y, place.x));
 				map.setLevel(3);
 			});
-		});
-	}
+	});
+}
 
-	// 상세 정보 닫기 버튼
-	document.getElementById('placeDetailClose').addEventListener('click', function() {
+// 상세 정보 닫기 버튼
+document.getElementById('placeDetailClose').addEventListener('click', function() {
 		// 모든 마커 다시 표시
 		markers.forEach(marker => {
 			marker.setMap(map);
@@ -611,15 +724,41 @@ function searchPlaces(keyword, category) {
 		}
 	});
 
-		// 필터 버튼 클릭
-		document.querySelectorAll('.filter-btn').forEach(btn => {
-			btn.addEventListener('click', function() {
-				this.classList.toggle('active');
-				// 필터링 로직은 여기에 추가 가능
-				console.log('Filter:', this.dataset.filter, 'Active:', this.classList.contains('active'));
-			});
+	// 필터 버튼 클릭
+	document.querySelectorAll('.filter-btn').forEach(btn => {
+		btn.addEventListener('click', function() {
+			this.classList.toggle('active');
+			// 필터링 로직은 여기에 추가 가능
+			console.log('Filter:', this.dataset.filter, 'Active:', this.classList.contains('active'));
 		});
-	</script>
+	});
+
+	// 탭 클릭 이벤트
+	document.querySelectorAll('.place-detail-tab').forEach(tab => {
+		tab.addEventListener('click', function() {
+			const tabName = this.dataset.tab;
+			
+			// 모든 탭의 active 클래스 제거
+			document.querySelectorAll('.place-detail-tab').forEach(t => {
+				t.classList.remove('active');
+			});
+			// 클릭한 탭에 active 클래스 추가
+			this.classList.add('active');
+			
+			// 모든 탭 컨텐츠 숨기기
+			document.querySelectorAll('.tab-content').forEach(content => {
+				content.classList.remove('active');
+			});
+			// 해당 탭 컨텐츠 보이기
+			const targetContent = document.getElementById('tab-' + tabName);
+			if (targetContent) {
+				targetContent.classList.add('active');
+			}
+			
+			console.log('탭 선택:', tabName);
+		});
+	});
+</script>
 </body>
 </html>
 
