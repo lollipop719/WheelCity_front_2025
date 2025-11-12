@@ -59,28 +59,109 @@
 			height: 100%;
 			fill: #666;
 		}
-		.search-results {
-			position: absolute;
-			left: 52px;
-			top: 114px;
-			width: 383px;
-			height: 792px;
-			background: #ffffff;
-			border: 1px solid #FEE500;
-			border-radius: 10px;
-			box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-			overflow: hidden;
-			z-index: 10;
-			box-sizing: border-box;
-			display: flex;
-			flex-direction: column;
-		}
-		.result-filters {
-			padding: 16px 20px 4px 20px;
-			display: flex;
-			gap: 8px;
-			flex-wrap: wrap;
-		}
+	.place-detail {
+		position: absolute;
+		left: 52px;
+		top: 114px;
+		width: 383px;
+		background: #ffffff;
+		border: 1px solid #FEE500;
+		border-radius: 10px;
+		box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+		z-index: 11;
+		box-sizing: border-box;
+		padding: 20px;
+		display: none;
+	}
+	.place-detail-header {
+		display: flex;
+		justify-content: space-between;
+		align-items: flex-start;
+		margin-bottom: 8px;
+	}
+	.place-detail-title {
+		font-family: 'Inter', sans-serif;
+		font-weight: 500;
+		font-size: 18px;
+		color: #333;
+		margin: 0 0 4px 0;
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		flex-wrap: wrap;
+	}
+	.place-detail-title > span:first-child {
+		font-weight: 500;
+	}
+	.place-detail-category {
+		font-family: 'Inter', sans-serif;
+		font-weight: 400;
+		font-size: 13px;
+		color: #999;
+		background: #f5f5f5;
+		padding: 4px 10px;
+		border-radius: 12px;
+	}
+	.place-detail-reviews {
+		font-family: 'Inter', sans-serif;
+		font-weight: 400;
+		font-size: 14px;
+		color: #666;
+		margin-bottom: 8px;
+	}
+	.place-detail-close {
+		cursor: pointer;
+		width: 24px;
+		height: 24px;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		color: #666;
+		font-size: 20px;
+		line-height: 1;
+	}
+	.place-detail-info {
+		display: flex;
+		flex-direction: column;
+		gap: 10px;
+		margin-top: 12px;
+		font-family: 'Inter', sans-serif;
+		font-size: 14px;
+		color: #666;
+	}
+	.place-detail-info-item {
+		display: flex;
+		align-items: flex-start;
+		gap: 8px;
+	}
+	.place-detail-icon {
+		width: 16px;
+		height: 16px;
+		margin-top: 2px;
+		opacity: 0.6;
+	}
+	.search-results {
+		position: absolute;
+		left: 52px;
+		top: 114px;
+		width: 383px;
+		height: 792px;
+		background: #ffffff;
+		border: 1px solid #FEE500;
+		border-radius: 10px;
+		box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+		overflow: hidden;
+		z-index: 10;
+		box-sizing: border-box;
+		display: flex;
+		flex-direction: column;
+	}
+	.result-filters {
+		padding: 16px 26px 4px 26px;
+		display: flex;
+		gap: 8px;
+		flex-wrap: wrap;
+	}
 		.filter-btn {
 			padding: 6px 14px;
 			border: 1px solid #ddd;
@@ -110,11 +191,11 @@
 			color: #000;
 			font-weight: 500;
 		}
-		.result-list {
-			flex: 1;
-			overflow-y: auto;
-			padding: 16px 20px;
-		}
+	.result-list {
+		flex: 1;
+		overflow-y: auto;
+		padding: 16px 26px;
+	}
 		.result-item {
 			padding: 16px 0;
 			border-bottom: 1px solid #f0f0f0;
@@ -127,14 +208,14 @@
 		.result-item:last-child {
 			border-bottom: none;
 		}
-		.result-item:hover {
-			background: #f9f9f9;
-			margin: 0 -20px;
-			padding: 16px 20px;
-		}
-		.result-item:first-child:hover {
-			padding-top: 0;
-		}
+	.result-item:hover {
+		background: #f9f9f9;
+		margin: 0 -26px;
+		padding: 16px 26px;
+	}
+	.result-item:first-child:hover {
+		padding: 0 26px 16px 26px;
+	}
 		.result-header {
 			display: flex;
 			justify-content: space-between;
@@ -205,6 +286,28 @@
 			</svg>
 		</div>
 	</div>
+	<div class="place-detail" id="placeDetail">
+		<div class="place-detail-header">
+			<div style="flex: 1;">
+				<h2 class="place-detail-title">
+					<span id="placeTitle">매장명</span>
+					<span class="place-detail-category" id="placeCategory">카테고리</span>
+				</h2>
+				<div class="place-detail-reviews" id="placeReviews">리뷰 999+</div>
+			</div>
+			<div class="place-detail-close" id="placeDetailClose">×</div>
+		</div>
+		<div class="place-detail-info">
+			<div class="place-detail-info-item">
+				<span>📍</span>
+				<span id="placeAddress">주소</span>
+			</div>
+			<div class="place-detail-info-item">
+				<span>📞</span>
+				<span id="placePhone">전화번호</span>
+			</div>
+		</div>
+	</div>
 	<div class="search-results" id="searchResults" style="display: none;">
 		<div class="result-filters">
 			<button class="filter-btn" data-filter="type">
@@ -238,31 +341,34 @@
 		var markers = [];
 		var currentCategory = null;
 
-		// 검색 함수
-		function searchPlaces(keyword, category) {
-			// 기존 마커 제거
-			markers.forEach(marker => marker.setMap(null));
-			markers = [];
+	// 검색 함수
+	function searchPlaces(keyword, category) {
+		// 기존 마커 제거
+		markers.forEach(marker => marker.setMap(null));
+		markers = [];
+		
+		// 상세 정보 패널 숨기기
+		document.getElementById('placeDetail').style.display = 'none';
 
-			var callback = function(data, status) {
-				if (status === kakao.maps.services.Status.OK) {
-					displayResults(data);
-					displayMarkers(data);
-					
-					// 검색 결과 패널 표시
-					document.getElementById('searchResults').style.display = 'flex';
-					
-					// 지도 범위 조정
-					var bounds = new kakao.maps.LatLngBounds();
-					data.forEach(place => {
-						bounds.extend(new kakao.maps.LatLng(place.y, place.x));
-					});
-					map.setBounds(bounds);
-				} else {
-					document.getElementById('resultList').innerHTML = '<div style="padding: 20px; text-align: center; color: #999;">검색 결과가 없습니다.</div>';
-					document.getElementById('searchResults').style.display = 'flex';
-				}
-			};
+		var callback = function(data, status) {
+			if (status === kakao.maps.services.Status.OK) {
+				displayResults(data);
+				displayMarkers(data);
+				
+				// 검색 결과 패널 표시
+				document.getElementById('searchResults').style.display = 'flex';
+				
+				// 지도 범위 조정
+				var bounds = new kakao.maps.LatLngBounds();
+				data.forEach(place => {
+					bounds.extend(new kakao.maps.LatLng(place.y, place.x));
+				});
+				map.setBounds(bounds);
+			} else {
+				document.getElementById('resultList').innerHTML = '<div style="padding: 26px; text-align: center; color: #999;">검색 결과가 없습니다.</div>';
+				document.getElementById('searchResults').style.display = 'flex';
+			}
+		};
 
 			if (category) {
 				// 카테고리 검색
@@ -310,36 +416,99 @@
 			});
 			document.getElementById('resultList').innerHTML = resultsHtml;
 
-			// 결과 항목 클릭 이벤트
-			document.querySelectorAll('.result-item').forEach((item, index) => {
-				item.addEventListener('click', function() {
-					var place = data[index];
-					var position = new kakao.maps.LatLng(place.y, place.x);
-					map.setCenter(position);
-					map.setLevel(3);
-				});
-			});
+	// 결과 항목 클릭 이벤트
+	document.querySelectorAll('.result-item').forEach((item, index) => {
+		item.addEventListener('click', function() {
+			var place = data[index];
+			var position = new kakao.maps.LatLng(place.y, place.x);
+			map.setCenter(position);
+			map.setLevel(3);
+			
+			// 해당 마커 찾기
+			var selectedMarker = markers[index];
+			
+			// 상세 정보 표시
+			showPlaceDetail(place, selectedMarker);
+		});
+	});
+}
+
+	// 매장 상세 정보 표시
+	function showPlaceDetail(place, selectedMarker) {
+		// 매장명
+		document.getElementById('placeTitle').textContent = place.place_name;
+		
+		// 카테고리 - 제일 하위 분류만 표시
+		var category = '카테고리 정보 없음';
+		if (place.category_name) {
+			var categories = place.category_name.split('>').map(c => c.trim());
+			category = categories[categories.length - 1]; // 마지막 카테고리 (제일 하위 분류)
 		}
+		document.getElementById('placeCategory').textContent = category;
+		
+	// 리뷰 개수 (임시로 랜덤 생성 - 실제로는 API에서 가져와야 함)
+	var reviewCount = Math.floor(Math.random() * 1500) + 50;
+	var reviewText = reviewCount >= 1000 ? '리뷰 999+' : '리뷰 ' + reviewCount;
+	document.getElementById('placeReviews').textContent = reviewText;
+		
+		// 주소와 전화번호
+		document.getElementById('placeAddress').textContent = place.address_name || place.road_address_name || '주소 정보 없음';
+		document.getElementById('placePhone').textContent = place.phone || '전화번호 정보 없음';
+		
+		// 선택된 마커를 제외한 모든 마커 숨기기
+		markers.forEach(marker => {
+			if (marker.placeData && 
+				marker.placeData.place_name === place.place_name && 
+				marker.placeData.x === place.x && 
+				marker.placeData.y === place.y) {
+				marker.setMap(map); // 선택된 마커만 표시
+			} else {
+				marker.setMap(null); // 나머지 마커 숨기기
+			}
+		});
+		
+		// 검색 결과 패널 숨기고 상세 정보 표시
+		document.getElementById('searchResults').style.display = 'none';
+		document.getElementById('placeDetail').style.display = 'block';
+	}
 
-		// 마커 표시
-		function displayMarkers(data) {
-			data.forEach(place => {
-				var marker = new kakao.maps.Marker({
-					position: new kakao.maps.LatLng(place.y, place.x),
-					map: map
-				});
-				markers.push(marker);
-
-				// 인포윈도우
-				var infowindow = new kakao.maps.InfoWindow({
-					content: '<div style="padding:5px;font-size:12px;">' + place.place_name + '</div>'
-				});
-
-				kakao.maps.event.addListener(marker, 'click', function() {
-					infowindow.open(map, marker);
-				});
+	// 마커 표시
+	function displayMarkers(data) {
+		data.forEach((place, index) => {
+			var marker = new kakao.maps.Marker({
+				position: new kakao.maps.LatLng(place.y, place.x),
+				map: map
 			});
-		}
+			
+			// 마커에 place 정보 저장
+			marker.placeData = place;
+			markers.push(marker);
+
+			// 인포윈도우
+			var infowindow = new kakao.maps.InfoWindow({
+				content: '<div style="padding:5px;font-size:12px;">' + place.place_name + '</div>'
+			});
+
+			kakao.maps.event.addListener(marker, 'click', function() {
+				infowindow.open(map, marker);
+				// 마커 클릭 시에도 상세 정보 표시
+				showPlaceDetail(place, marker);
+				map.setCenter(new kakao.maps.LatLng(place.y, place.x));
+				map.setLevel(3);
+			});
+		});
+	}
+
+	// 상세 정보 닫기 버튼
+	document.getElementById('placeDetailClose').addEventListener('click', function() {
+		// 모든 마커 다시 표시
+		markers.forEach(marker => {
+			marker.setMap(map);
+		});
+		
+		document.getElementById('placeDetail').style.display = 'none';
+		document.getElementById('searchResults').style.display = 'flex';
+	});
 
 		// 검색 버튼 클릭
 		document.getElementById('searchBtn').addEventListener('click', function() {

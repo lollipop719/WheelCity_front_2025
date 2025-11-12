@@ -1,230 +1,545 @@
-<!doctype html>
-<html lang="ko">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>휠도시 – Wheel City</title>
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8"/>
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Kakao 지도</title>
+	<link rel="preconnect" href="https://fonts.googleapis.com">
+	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+	<link href="https://fonts.googleapis.com/css2?family=Inter:wght@500&display=swap" rel="stylesheet">
+	<style>
+		html, body {
+			margin: 0;
+			padding: 0;
+			width: 100%;
+			height: 100%;
+			overflow: hidden;
+		}
+		#map {
+			width: 100%;
+			height: 100%;
+		}
+		.search-box {
+			position: absolute;
+			left: 52px;
+			top: 59px;
+			width: 383px;
+			height: 45px;
+			background: #ffffff;
+			border: 1px solid #FEE500;
+			border-radius: 10px;
+			display: flex;
+			align-items: center;
+			padding: 0 16px;
+			box-sizing: border-box;
+			z-index: 10;
+			box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+		}
+		.search-box input {
+			flex: 1;
+			border: none;
+			outline: none;
+			font-family: 'Inter', sans-serif;
+			font-weight: 500;
+			font-size: 15px;
+			background: transparent;
+			color: #333;
+		}
+		.search-box input::placeholder {
+			color: #999;
+		}
+		.search-icon {
+			width: 20px;
+			height: 20px;
+			margin-left: 12px;
+			cursor: pointer;
+		}
+		.search-icon svg {
+			width: 100%;
+			height: 100%;
+			fill: #666;
+		}
+	.place-detail {
+		position: absolute;
+		left: 52px;
+		top: 114px;
+		width: 383px;
+		background: #ffffff;
+		border: 1px solid #FEE500;
+		border-radius: 10px;
+		box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+		z-index: 11;
+		box-sizing: border-box;
+		padding: 20px;
+		display: none;
+	}
+	.place-detail-header {
+		display: flex;
+		justify-content: space-between;
+		align-items: flex-start;
+		margin-bottom: 8px;
+	}
+	.place-detail-title {
+		font-family: 'Inter', sans-serif;
+		font-weight: 500;
+		font-size: 18px;
+		color: #333;
+		margin: 0 0 4px 0;
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		flex-wrap: wrap;
+	}
+	.place-detail-title > span:first-child {
+		font-weight: 500;
+	}
+	.place-detail-category {
+		font-family: 'Inter', sans-serif;
+		font-weight: 400;
+		font-size: 13px;
+		color: #999;
+		background: #f5f5f5;
+		padding: 4px 10px;
+		border-radius: 12px;
+	}
+	.place-detail-reviews {
+		font-family: 'Inter', sans-serif;
+		font-weight: 400;
+		font-size: 14px;
+		color: #666;
+		margin-bottom: 8px;
+	}
+	.place-detail-close {
+		cursor: pointer;
+		width: 24px;
+		height: 24px;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		color: #666;
+		font-size: 20px;
+		line-height: 1;
+	}
+	.place-detail-info {
+		display: flex;
+		flex-direction: column;
+		gap: 10px;
+		margin-top: 12px;
+		font-family: 'Inter', sans-serif;
+		font-size: 14px;
+		color: #666;
+	}
+	.place-detail-info-item {
+		display: flex;
+		align-items: flex-start;
+		gap: 8px;
+	}
+	.place-detail-icon {
+		width: 16px;
+		height: 16px;
+		margin-top: 2px;
+		opacity: 0.6;
+	}
+	.search-results {
+		position: absolute;
+		left: 52px;
+		top: 114px;
+		width: 383px;
+		height: 792px;
+		background: #ffffff;
+		border: 1px solid #FEE500;
+		border-radius: 10px;
+		box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+		overflow: hidden;
+		z-index: 10;
+		box-sizing: border-box;
+		display: flex;
+		flex-direction: column;
+	}
+	.result-filters {
+		padding: 16px 26px 4px 26px;
+		display: flex;
+		gap: 8px;
+		flex-wrap: wrap;
+	}
+		.filter-btn {
+			padding: 6px 14px;
+			border: 1px solid #ddd;
+			border-radius: 18px;
+			background: #ffffff;
+			color: #666;
+			font-family: 'Inter', sans-serif;
+			font-weight: 400;
+			font-size: 13px;
+			cursor: pointer;
+			display: flex;
+			align-items: center;
+			gap: 4px;
+			transition: all 0.2s;
+			height: 32px;
+			box-sizing: border-box;
+		}
+		.filter-btn[data-filter="type"] {
+			padding: 6px 11px;
+		}
+		.filter-btn:hover {
+			background: #f9f9f9;
+		}
+		.filter-btn.active {
+			background: #FEE500;
+			border-color: #FEE500;
+			color: #000;
+			font-weight: 500;
+		}
+	.result-list {
+		flex: 1;
+		overflow-y: auto;
+		padding: 16px 26px;
+	}
+		.result-item {
+			padding: 16px 0;
+			border-bottom: 1px solid #f0f0f0;
+			cursor: pointer;
+			margin: 0;
+		}
+		.result-item:first-child {
+			padding-top: 0;
+		}
+		.result-item:last-child {
+			border-bottom: none;
+		}
+	.result-item:hover {
+		background: #f9f9f9;
+		margin: 0 -26px;
+		padding: 16px 26px;
+	}
+	.result-item:first-child:hover {
+		padding: 0 26px 16px 26px;
+	}
+		.result-header {
+			display: flex;
+			justify-content: space-between;
+			align-items: flex-start;
+			margin-bottom: 8px;
+		}
+		.result-name {
+			font-family: 'Inter', sans-serif;
+			font-weight: 500;
+			font-size: 16px;
+			color: #333;
+			margin: 0;
+		}
+		.result-status {
+			font-family: 'Inter', sans-serif;
+			font-weight: 400;
+			font-size: 12px;
+			color: #666;
+			margin-top: 4px;
+		}
+		.result-hours {
+			font-family: 'Inter', sans-serif;
+			font-weight: 400;
+			font-size: 12px;
+			color: #999;
+			margin-top: 4px;
+		}
+		.result-info {
+			display: flex;
+			align-items: center;
+			gap: 8px;
+			margin-top: 8px;
+			font-family: 'Inter', sans-serif;
+			font-weight: 400;
+			font-size: 12px;
+			color: #666;
+		}
+		.result-thumbnail {
+			width: 60px;
+			height: 60px;
+			border-radius: 8px;
+			object-fit: cover;
+			background: #f0f0f0;
+		}
+		.result-content {
+			display: flex;
+			gap: 12px;
+		}
+		.result-details {
+			flex: 1;
+		}
+		.accessibility-tag {
+			display: inline-block;
+			padding: 2px 8px;
+			background: #f0f0f0;
+			border-radius: 4px;
+			font-size: 11px;
+			margin-right: 4px;
+		}
+	</style>
+</head>
+<body>
+	<div class="search-box">
+		<input type="text" placeholder="장소 검색" id="searchInput">
+		<div class="search-icon" id="searchBtn">
+			<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+				<path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
+			</svg>
+		</div>
+	</div>
+	<div class="place-detail" id="placeDetail">
+		<div class="place-detail-header">
+			<div style="flex: 1;">
+				<h2 class="place-detail-title">
+					<span id="placeTitle">매장명</span>
+					<span class="place-detail-category" id="placeCategory">카테고리</span>
+				</h2>
+				<div class="place-detail-reviews" id="placeReviews">리뷰 999+</div>
+			</div>
+			<div class="place-detail-close" id="placeDetailClose">×</div>
+		</div>
+		<div class="place-detail-info">
+			<div class="place-detail-info-item">
+				<span>📍</span>
+				<span id="placeAddress">주소</span>
+			</div>
+			<div class="place-detail-info-item">
+				<span>📞</span>
+				<span id="placePhone">전화번호</span>
+			</div>
+		</div>
+	</div>
+	<div class="search-results" id="searchResults" style="display: none;">
+		<div class="result-filters">
+			<button class="filter-btn" data-filter="type">
+				<img src="/img/filter-icon.png" alt="필터" style="width: 36px; height: 36px;">
+			</button>
+			<button class="filter-btn" data-filter="open">
+				<span>영업중</span>
+			</button>
+			<button class="filter-btn" data-filter="ramp">
+				<span>경사로</span>
+			</button>
+			<button class="filter-btn" data-filter="wheelchair">
+				<img src="/img/wheelchair-icon.svg" alt="휠체어" style="width: 13.6px; height: 17px; opacity: 0.8;">
+				<span>화장실</span>
+			</button>
+		</div>
+		<div class="result-list" id="resultList"></div>
+	</div>
+	<div id="map"></div>
 
-    <!-- Kakao SDK -->
-    <script src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=d96c2bf65fd166e398605c573c95dbae&libraries=services&autoload=false"></script>
+	<script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey=d96c2bf65fd166e398605c573c95dbae&libraries=services"></script>
+	<script>
+		var container = document.getElementById('map');
+		var options = {
+			center: new kakao.maps.LatLng(36.3734, 127.3628), //KAIST 중심좌표
+			level: 4
+		};
 
-    <style>
-      :root{
-        /* === Light Theme === */
-        --bg:#f6f8fb;        /* 페이지 배경 */
-        --panel:#ffffff;      /* 카드/패널 배경 */
-        --panel-2:#f1f5f9;    /* hover 배경 */
-        --border:#d0d7e2;     /* 테두리 */
-        --text:#0b1220;       /* 본문 글자색 (진한 남색 계열) */
-        --muted:#5b6b86;      /* 보조 글자색 */
-        --accent:#0ea5e9;     /* 포인트 (하늘색) */
-        --frame:#ffffff;      /* 지도 영역 배경 */
-      }
-      *{box-sizing:border-box}
-      html,body{height:100%}
-      body{
-        margin:0;background:var(--bg);color:var(--text);
-        font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,"Noto Sans KR",Helvetica,Arial
-      }
+		var map = new kakao.maps.Map(container, options);
+		var places = new kakao.maps.services.Places();
+		var markers = [];
+		var currentCategory = null;
 
-      /* ===== 상단/하단: 기존 구조 유지 (밝게) ===== */
-      .app{min-height:100%;display:grid;grid-template-rows:auto 1fr auto}
-      header.top{
-        position:sticky;top:0;z-index:20;background:rgba(255,255,255,.9);
-        backdrop-filter:blur(8px);border-bottom:1px solid var(--border);
-      }
-      .top-inner{
-        max-width:1200px;margin:0 auto;padding:12px 16px;display:grid;gap:12px;
-        grid-template-columns:1fr 520px auto;align-items:center;
-      }
-      .brand{display:flex;gap:10px;align-items:center;font-weight:800;letter-spacing:.3px}
-      .brand .dot{
-        width:10px;height:10px;border-radius:999px;background:var(--accent);
-        box-shadow:0 0 10px rgba(14,165,233,.5)
-      }
-      .search{
-        display:flex;gap:8px;align-items:center;background:var(--panel);
-        border:1px solid var(--border);border-radius:14px;padding:8px 10px;
-      }
-      .search input{all:unset;flex:1;font-size:15px;color:var(--text)}
-      .btn{
-        cursor:pointer;border:1px solid var(--border);background:var(--panel);
-        color:var(--text);height:40px;padding:0 14px;border-radius:10px;font-weight:700
-      }
-      .btn:hover{outline:1px solid #bfd3ea}
-      .btn:active{transform:translateY(1px)}
+	// 검색 함수
+	function searchPlaces(keyword, category) {
+		// 기존 마커 제거
+		markers.forEach(marker => marker.setMap(null));
+		markers = [];
+		
+		// 상세 정보 패널 숨기기
+		document.getElementById('placeDetail').style.display = 'none';
 
-      footer{
-        border-top:1px solid var(--border);background:rgba(255,255,255,.9);
-        color:var(--muted);
-      }
-      .footer-inner{
-        max-width:1200px;margin:0 auto;padding:14px 16px;font-size:12px;
-        display:flex;flex-wrap:wrap;gap:12px;justify-content:space-between;align-items:center;
-      }
-      .credit a{color:var(--muted);text-decoration:underline}
+		var callback = function(data, status) {
+			if (status === kakao.maps.services.Status.OK) {
+				displayResults(data);
+				displayMarkers(data);
+				
+				// 검색 결과 패널 표시
+				document.getElementById('searchResults').style.display = 'flex';
+				
+				// 지도 범위 조정
+				var bounds = new kakao.maps.LatLngBounds();
+				data.forEach(place => {
+					bounds.extend(new kakao.maps.LatLng(place.y, place.x));
+				});
+				map.setBounds(bounds);
+			} else {
+				document.getElementById('resultList').innerHTML = '<div style="padding: 26px; text-align: center; color: #999;">검색 결과가 없습니다.</div>';
+				document.getElementById('searchResults').style.display = 'flex';
+			}
+		};
 
-      /* ===== 본문(지도로 최대 채움) ===== */
-      .main-wrap{
-        width:100vw;
-        display:grid;
-        grid-template-columns:260px minmax(0,1fr); /* 왼쪽 메뉴 폭 고정 */
-        gap:0;
-      }
+			if (category) {
+				// 카테고리 검색
+				places.categorySearch(category, callback, {
+					location: map.getCenter(),
+					radius: 5000
+				});
+			} else if (keyword) {
+				// 키워드 검색
+				places.keywordSearch(keyword, callback, {
+					location: map.getCenter(),
+					radius: 5000
+				});
+			}
+		}
 
-      /* 왼쪽 메뉴: 폭/스타일 유지, 좌측 고정 */
-      aside.nav{
-        background:var(--panel);
-        border-right:1px solid var(--border);
-        padding:12px;
-        min-height:100%;
-      }
-      .nav h3{margin:4px 8px 10px;font-size:13px;color:var(--muted);font-weight:700}
-      .menu{display:grid;gap:6px}
-      .menu a{
-        display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;
-        color:var(--text);text-decoration:none;background:transparent;border:1px solid transparent;
-      }
-      .menu a:hover{background:var(--panel-2);border-color:var(--border)}
-      .menu .badge{font-size:11px;color:var(--muted)}
+		// 검색 결과 표시
+		function displayResults(data) {
+			var resultsHtml = '';
+			data.forEach((place, index) => {
+				var status = place.place_url ? '영업중' : '정보 없음';
+				var hours = place.place_url ? '영업 시간 정보 없음' : '';
+				var reviewCount = place.place_url ? '리뷰 정보 없음' : '';
+				
+				resultsHtml += `
+					<div class="result-item" data-index="${index}">
+						<div class="result-content">
+							<div class="result-details">
+								<div class="result-header">
+									<div>
+										<h3 class="result-name">${place.place_name}</h3>
+										<div class="result-status">${status}</div>
+										<div class="result-hours">${hours}</div>
+									</div>
+								</div>
+								<div class="result-info">
+									<span>${reviewCount}</span>
+									<span class="accessibility-tag">접근성 정보</span>
+								</div>
+							</div>
+							<img src="${place.place_url ? 'https://via.placeholder.com/60' : 'https://via.placeholder.com/60'}" alt="${place.place_name}" class="result-thumbnail" onerror="this.src='https://via.placeholder.com/60'">
+						</div>
+					</div>
+				`;
+			});
+			document.getElementById('resultList').innerHTML = resultsHtml;
 
-      /* 지도 영역 */
-      .map-area{ position:relative; background:var(--frame); }
-      #mapWrap{ position:relative; width:100%; }
-      #map{
-        position:absolute; inset:0;
-        border-left:1px solid var(--border);
-      }
+	// 결과 항목 클릭 이벤트
+	document.querySelectorAll('.result-item').forEach((item, index) => {
+		item.addEventListener('click', function() {
+			var place = data[index];
+			var position = new kakao.maps.LatLng(place.y, place.x);
+			map.setCenter(position);
+			map.setLevel(3);
+			
+			// 해당 마커 찾기
+			var selectedMarker = markers[index];
+			
+			// 상세 정보 표시
+			showPlaceDetail(place, selectedMarker);
+		});
+	});
+}
 
-      /* 지도 우상단 툴바 */
-      .map-toolbar{
-        position:absolute; top:12px; right:12px; z-index:5;
-        display:flex; gap:8px;
-        background:rgba(255,255,255,.9); border:1px solid var(--border);
-        padding:8px; border-radius:12px;
-      }
+	// 매장 상세 정보 표시
+	function showPlaceDetail(place, selectedMarker) {
+		// 매장명
+		document.getElementById('placeTitle').textContent = place.place_name;
+		
+		// 카테고리 - 제일 하위 분류만 표시
+		var category = '카테고리 정보 없음';
+		if (place.category_name) {
+			var categories = place.category_name.split('>').map(c => c.trim());
+			category = categories[categories.length - 1]; // 마지막 카테고리 (제일 하위 분류)
+		}
+		document.getElementById('placeCategory').textContent = category;
+		
+	// 리뷰 개수 (임시로 랜덤 생성 - 실제로는 API에서 가져와야 함)
+	var reviewCount = Math.floor(Math.random() * 1500) + 50;
+	var reviewText = reviewCount >= 1000 ? '리뷰 999+' : '리뷰 ' + reviewCount;
+	document.getElementById('placeReviews').textContent = reviewText;
+		
+		// 주소와 전화번호
+		document.getElementById('placeAddress').textContent = place.address_name || place.road_address_name || '주소 정보 없음';
+		document.getElementById('placePhone').textContent = place.phone || '전화번호 정보 없음';
+		
+		// 선택된 마커를 제외한 모든 마커 숨기기
+		markers.forEach(marker => {
+			if (marker.placeData && 
+				marker.placeData.place_name === place.place_name && 
+				marker.placeData.x === place.x && 
+				marker.placeData.y === place.y) {
+				marker.setMap(map); // 선택된 마커만 표시
+			} else {
+				marker.setMap(null); // 나머지 마커 숨기기
+			}
+		});
+		
+		// 검색 결과 패널 숨기고 상세 정보 표시
+		document.getElementById('searchResults').style.display = 'none';
+		document.getElementById('placeDetail').style.display = 'block';
+	}
 
-      @media (max-width: 980px){
-        .top-inner{grid-template-columns:1fr auto auto}
-        .main-wrap{grid-template-columns:1fr}
-        aside.nav{border-right:none;border-bottom:1px solid var(--border)}
-        #map{border-left:none}
-      }
-    </style>
-  </head>
-  <body>
-    <div class="app">
-      <!-- ===== 헤더 ===== -->
-      <header class="top">
-        <div class="top-inner">
-          <div class="brand">
-            <span class="dot"></span>
-            <span>휠도시</span>
-          </div>
-          <form id="searchForm" class="search" onsubmit="return false;">
-            <input id="keyword" type="text" placeholder="장소/주소 검색 (예: 무장애 화장실, 경사로, 카페)" />
-            <button id="searchBtn" class="btn" type="button" title="검색">검색</button>
-          </form>
-          <!-- 로그인 -->
-          <button class="btn" id="loginBtn" type="button" onclick="location.href='login.html'">로그인</button>
-        </div>
-      </header>
+	// 마커 표시
+	function displayMarkers(data) {
+		data.forEach((place, index) => {
+			var marker = new kakao.maps.Marker({
+				position: new kakao.maps.LatLng(place.y, place.x),
+				map: map
+			});
+			
+			// 마커에 place 정보 저장
+			marker.placeData = place;
+			markers.push(marker);
 
-      <!-- ===== 본문(메뉴 + 지도 최대) ===== -->
-      <div class="main-wrap">
-        <!-- 왼쪽 메뉴 -->
-        <aside class="nav" aria-label="사이드 메뉴">
-          <h3>메뉴</h3>
-          <nav class="menu">
-            <a href="about.html" title="휠도시 소개">📖 소개 <span class="badge">About</span></a>
-            <a href="report.html" title="경사로 제보하기">🧭 경사로 제보하기 <span class="badge">Report</span></a>
-            <a href="map.html" title="접근성 지도">🗺️ 접근성 지도 <span class="badge">Map</span></a>
-            <a href="help.html" title="도움말/문의">💬 도움말/문의 <span class="badge">Help</span></a>
-          </nav>
-        </aside>
+			// 인포윈도우
+			var infowindow = new kakao.maps.InfoWindow({
+				content: '<div style="padding:5px;font-size:12px;">' + place.place_name + '</div>'
+			});
 
-        <!-- 지도 -->
-        <section class="map-area" aria-label="지도 영역">
-          <div class="map-toolbar">
-            <button class="btn" id="roadmap" title="일반 지도" style="height:32px">일반</button>
-            <button class="btn" id="skyview" title="스카이뷰" style="height:32px">스카이뷰</button>
-            <button class="btn" id="fitBoundsBtn" title="결과 범위맞춤" style="height:32px">범위</button>
-          </div>
-          <div id="mapWrap">
-            <div id="map" aria-label="Kakao Map"></div>
-          </div>
-        </section>
-      </div>
+			kakao.maps.event.addListener(marker, 'click', function() {
+				infowindow.open(map, marker);
+				// 마커 클릭 시에도 상세 정보 표시
+				showPlaceDetail(place, marker);
+				map.setCenter(new kakao.maps.LatLng(place.y, place.x));
+				map.setLevel(3);
+			});
+		});
+	}
 
-      <!-- ===== 푸터 ===== -->
-      <footer>
-        <div class="footer-inner">
-          <div class="credit">© 2025 휠도시</div>
-          <div class="credit">지도/Map API 제공: <a href="https://map.kakao.com/" target="_blank" rel="noopener">KakaoMap</a></div>
-        </div>
-      </footer>
-    </div>
+	// 상세 정보 닫기 버튼
+	document.getElementById('placeDetailClose').addEventListener('click', function() {
+		// 모든 마커 다시 표시
+		markers.forEach(marker => {
+			marker.setMap(map);
+		});
+		
+		document.getElementById('placeDetail').style.display = 'none';
+		document.getElementById('searchResults').style.display = 'flex';
+	});
 
-    <script>
-      // ===== Kakao SDK 로드 & 지도 초기화 =====
-      (function boot(){
-        if (window.kakao && kakao.maps && typeof kakao.maps.load === 'function') {
-          kakao.maps.load(initMap);
-        } else {
-          setTimeout(boot, 50);
-        }
-      })();
+		// 검색 버튼 클릭
+		document.getElementById('searchBtn').addEventListener('click', function() {
+			var keyword = document.getElementById('searchInput').value.trim();
+			if (keyword) {
+				searchPlaces(keyword, null);
+			} else if (currentCategory) {
+				searchPlaces(null, currentCategory);
+			}
+		});
 
-      let map, places, markers=[], lastBounds=null;
+		// 엔터키 검색
+		document.getElementById('searchInput').addEventListener('keypress', function(e) {
+			if (e.key === 'Enter') {
+				var keyword = this.value.trim();
+				if (keyword) {
+					searchPlaces(keyword, null);
+				} else if (currentCategory) {
+					searchPlaces(null, currentCategory);
+				}
+			}
+		});
 
-      // 헤더/푸터 높이에 맞춰 지도 세로공간 계산
-      function resizeMapHeight() {
-        const headerH = document.querySelector('header.top')?.offsetHeight || 0;
-        const footerH = document.querySelector('footer')?.offsetHeight || 0;
-        const vh = window.innerHeight || document.documentElement.clientHeight;
-        const mapWrap = document.getElementById('mapWrap');
-        mapWrap.style.height = Math.max(240, vh - headerH - footerH) + 'px';
-      }
-      window.addEventListener('resize', ()=>{
-        resizeMapHeight();
-        if (map) kakao.maps.event.trigger(map, 'resize');
-      });
-
-      function initMap(){
-        resizeMapHeight();
-
-        const center = new kakao.maps.LatLng(37.5662952, 126.9779451); // 서울 중심
-        map = new kakao.maps.Map(document.getElementById('map'), { center, level:5 });
-        places = new kakao.maps.services.Places();
-
-        // 상단 검색(간단)
-        document.getElementById('searchBtn').addEventListener('click', onSearch);
-        document.getElementById('keyword').addEventListener('keydown', (e)=>{ if(e.key==='Enter') onSearch(); });
-
-        // 지도 타입
-        document.getElementById('roadmap').addEventListener('click', ()=> map.setMapTypeId(kakao.maps.MapTypeId.ROADMAP));
-        document.getElementById('skyview').addEventListener('click', ()=> map.setMapTypeId(kakao.maps.MapTypeId.HYBRID));
-        document.getElementById('fitBoundsBtn').addEventListener('click', ()=>{ if(lastBounds) map.setBounds(lastBounds); });
-      }
-
-      function onSearch(){
-        const q = document.getElementById('keyword').value.trim();
-        if(!q) return;
-        places.keywordSearch(q, (data, status) => {
-          if(status !== kakao.maps.services.Status.OK){ clearMarkers(); lastBounds=null; return; }
-          clearMarkers();
-          const bounds = new kakao.maps.LatLngBounds();
-          data.forEach(p=>{
-            const pos = new kakao.maps.LatLng(p.y, p.x);
-            bounds.extend(pos);
-            const m = new kakao.maps.Marker({ position: pos });
-            markers.push(m); m.setMap(map);
-          });
-          lastBounds=bounds; map.setBounds(bounds);
-        }, { size: 12 });
-      }
-
-      function clearMarkers(){ markers.forEach(m=>m.setMap(null)); markers=[]; }
-    </script>
-  </body>
+		// 필터 버튼 클릭
+		document.querySelectorAll('.filter-btn').forEach(btn => {
+			btn.addEventListener('click', function() {
+				this.classList.toggle('active');
+				// 필터링 로직은 여기에 추가 가능
+				console.log('Filter:', this.dataset.filter, 'Active:', this.classList.contains('active'));
+			});
+		});
+	</script>
+</body>
 </html>
