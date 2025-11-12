@@ -101,6 +101,7 @@
 		background: #f5f5f5;
 		padding: 4px 10px;
 		border-radius: 12px;
+		white-space: nowrap;
 	}
 	.place-detail-reviews {
 		font-family: 'Inter', sans-serif;
@@ -108,6 +109,20 @@
 		font-size: 14px;
 		color: #666;
 		margin-bottom: 8px;
+	}
+	.place-detail-photo {
+		margin-top: 40px;
+		width: 100%;
+		height: 162px;
+		background: #f9f9f9;
+		border-radius: 8px;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		color: #999;
+		font-family: 'Inter', sans-serif;
+		font-size: 14px;
+		border: 1px solid #e5e5e5;
 	}
 	.place-detail-close {
 		cursor: pointer;
@@ -307,6 +322,9 @@
 				<span id="placePhone">전화번호</span>
 			</div>
 		</div>
+		<div class="place-detail-photo" id="placePhoto">
+			사진 준비중
+		</div>
 	</div>
 	<div class="search-results" id="searchResults" style="display: none;">
 		<div class="result-filters">
@@ -328,7 +346,7 @@
 	</div>
 	<div id="map"></div>
 
-	<script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey=d96c2bf65fd166e398605c573c95dbae&libraries=services"></script>
+	<script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey=01785b9a288ab46417b78a3790ac85c5&libraries=services"></script>
 	<script>
 		var container = document.getElementById('map');
 		var options = {
@@ -341,34 +359,51 @@
 		var markers = [];
 		var currentCategory = null;
 
-	// 검색 함수
-	function searchPlaces(keyword, category) {
-		// 기존 마커 제거
-		markers.forEach(marker => marker.setMap(null));
-		markers = [];
-		
-		// 상세 정보 패널 숨기기
-		document.getElementById('placeDetail').style.display = 'none';
+// 검색 함수
+function searchPlaces(keyword, category) {
+	console.log('=== searchPlaces 함수 실행 ===');
+	console.log('키워드:', keyword);
+	console.log('카테고리:', category);
+	
+	// 기존 마커 제거
+	markers.forEach(marker => marker.setMap(null));
+	markers = [];
+	
+	// 상세 정보 패널 숨기기
+	document.getElementById('placeDetail').style.display = 'none';
 
-		var callback = function(data, status) {
-			if (status === kakao.maps.services.Status.OK) {
-				displayResults(data);
-				displayMarkers(data);
-				
-				// 검색 결과 패널 표시
-				document.getElementById('searchResults').style.display = 'flex';
-				
-				// 지도 범위 조정
-				var bounds = new kakao.maps.LatLngBounds();
-				data.forEach(place => {
-					bounds.extend(new kakao.maps.LatLng(place.y, place.x));
-				});
-				map.setBounds(bounds);
-			} else {
-				document.getElementById('resultList').innerHTML = '<div style="padding: 26px; text-align: center; color: #999;">검색 결과가 없습니다.</div>';
-				document.getElementById('searchResults').style.display = 'flex';
-			}
-		};
+	var callback = function(data, status) {
+		console.log('검색 상태:', status);
+		console.log('검색 데이터:', data);
+		
+		if (status === kakao.maps.services.Status.OK) {
+			console.log('검색 성공! 결과 수:', data.length);
+			displayResults(data);
+			displayMarkers(data);
+			
+			// 검색 결과 패널 표시
+			document.getElementById('searchResults').style.display = 'flex';
+			
+			// 지도 범위 조정
+			var bounds = new kakao.maps.LatLngBounds();
+			data.forEach(place => {
+				bounds.extend(new kakao.maps.LatLng(place.y, place.x));
+			});
+			map.setBounds(bounds);
+		} else if (status === kakao.maps.services.Status.ZERO_RESULT) {
+			console.log('검색 결과 없음');
+			document.getElementById('resultList').innerHTML = '<div style="padding: 26px; text-align: center; color: #999;">검색 결과가 없습니다.</div>';
+			document.getElementById('searchResults').style.display = 'flex';
+		} else if (status === kakao.maps.services.Status.ERROR) {
+			console.error('검색 에러 발생!');
+			document.getElementById('resultList').innerHTML = '<div style="padding: 26px; text-align: center; color: #f44;">검색 중 오류가 발생했습니다.</div>';
+			document.getElementById('searchResults').style.display = 'flex';
+		} else {
+			console.log('기타 상태:', status);
+			document.getElementById('resultList').innerHTML = '<div style="padding: 26px; text-align: center; color: #999;">검색 결과가 없습니다.</div>';
+			document.getElementById('searchResults').style.display = 'flex';
+		}
+	};
 
 			if (category) {
 				// 카테고리 검색
@@ -385,10 +420,18 @@
 			}
 		}
 
-		// 검색 결과 표시
-		function displayResults(data) {
-			var resultsHtml = '';
-			data.forEach((place, index) => {
+	// 검색 결과 표시
+	function displayResults(data) {
+		// 디버깅: 모든 검색 결과의 카테고리 출력
+		console.log('=== 검색 결과 ===');
+		data.forEach((place, idx) => {
+			console.log(`${idx + 1}. ${place.place_name}`);
+			console.log('   카테고리:', place.category_name);
+		});
+		console.log('==================');
+		
+		var resultsHtml = '';
+		data.forEach((place, index) => {
 				var status = place.place_url ? '영업중' : '정보 없음';
 				var hours = place.place_url ? '영업 시간 정보 없음' : '';
 				var reviewCount = place.place_url ? '리뷰 정보 없음' : '';
@@ -435,16 +478,42 @@
 
 	// 매장 상세 정보 표시
 	function showPlaceDetail(place, selectedMarker) {
+		// 검색창 비우기
+		document.getElementById('searchInput').value = '';
+		
+		// 디버깅: 전체 카테고리 정보 출력
+		console.log('=== 매장 정보 ===');
+		console.log('매장명:', place.place_name);
+		console.log('전체 카테고리:', place.category_name);
+		console.log('주소:', place.address_name);
+		
 		// 매장명
 		document.getElementById('placeTitle').textContent = place.place_name;
 		
-		// 카테고리 - 제일 하위 분류만 표시
-		var category = '카테고리 정보 없음';
-		if (place.category_name) {
-			var categories = place.category_name.split('>').map(c => c.trim());
-			category = categories[categories.length - 1]; // 마지막 카테고리 (제일 하위 분류)
+	// 카테고리 - 조건부 표시
+	var category = '카테고리 정보 없음';
+	if (place.category_name) {
+		var categories = place.category_name.split('>').map(c => c.trim());
+		var lowestCategory = categories[categories.length - 1]; // 제일 하위 분류
+		
+		// 매장명의 첫 단어 추출
+		var firstWord = place.place_name.split(' ')[0];
+		
+		// 첫 단어와 제일 하위 분류 비교
+		if (firstWord === lowestCategory && categories.length > 1) {
+			// 같으면 한 단계 상위 분류 표시
+			category = categories[categories.length - 2];
+		} else {
+			// 다르면 제일 하위 분류 표시
+			category = lowestCategory;
 		}
-		document.getElementById('placeCategory').textContent = category;
+		
+		console.log('카테고리 배열:', categories);
+		console.log('첫 단어:', firstWord);
+		console.log('하위 분류:', lowestCategory);
+		console.log('표시할 카테고리:', category);
+	}
+	document.getElementById('placeCategory').textContent = category;
 		
 	// 리뷰 개수 (임시로 랜덤 생성 - 실제로는 API에서 가져와야 함)
 	var reviewCount = Math.floor(Math.random() * 1500) + 50;
@@ -510,27 +579,37 @@
 		document.getElementById('searchResults').style.display = 'flex';
 	});
 
-		// 검색 버튼 클릭
-		document.getElementById('searchBtn').addEventListener('click', function() {
-			var keyword = document.getElementById('searchInput').value.trim();
+	// 검색 버튼 클릭
+	document.getElementById('searchBtn').addEventListener('click', function() {
+		var keyword = document.getElementById('searchInput').value.trim();
+		console.log('검색 버튼 클릭! 키워드:', keyword);
+		if (keyword) {
+			console.log('키워드 검색 실행:', keyword);
+			searchPlaces(keyword, null);
+		} else if (currentCategory) {
+			console.log('카테고리 검색 실행:', currentCategory);
+			searchPlaces(null, currentCategory);
+		} else {
+			console.log('검색어가 없습니다.');
+		}
+	});
+
+	// 엔터키 검색
+	document.getElementById('searchInput').addEventListener('keypress', function(e) {
+		if (e.key === 'Enter') {
+			var keyword = this.value.trim();
+			console.log('엔터키 입력! 키워드:', keyword);
 			if (keyword) {
+				console.log('키워드 검색 실행:', keyword);
 				searchPlaces(keyword, null);
 			} else if (currentCategory) {
+				console.log('카테고리 검색 실행:', currentCategory);
 				searchPlaces(null, currentCategory);
+			} else {
+				console.log('검색어가 없습니다.');
 			}
-		});
-
-		// 엔터키 검색
-		document.getElementById('searchInput').addEventListener('keypress', function(e) {
-			if (e.key === 'Enter') {
-				var keyword = this.value.trim();
-				if (keyword) {
-					searchPlaces(keyword, null);
-				} else if (currentCategory) {
-					searchPlaces(null, currentCategory);
-				}
-			}
-		});
+		}
+	});
 
 		// 필터 버튼 클릭
 		document.querySelectorAll('.filter-btn').forEach(btn => {
