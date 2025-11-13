@@ -1,6 +1,10 @@
 // server.js
 // 정적 서버 + 자체 회원/로그인 API + 카카오 로그인 콜백
 
+const KAKAO_JS_KEY = '01785b9a288ab46417b78a3790ac85c5'; // 서버 시작 전 반드시 확인하기!
+const KAKAO_REST_KEY = 'cd7557809738d1512f8d09b00fbe9afb'; // Kakao REST API 키 - 서버에서만 사용
+const KAKAO_REDIRECT_URI = 'https://test.sbserver.store/auth/kakao/callback';  // 서버 시작 전 반드시 확인하기!
+
 const express = require('express');
 const path = require('path');
 const cookieSession = require('cookie-session');
@@ -66,10 +70,10 @@ app.get('/auth/kakao/callback', async (req, res) => {
       'https://kauth.kakao.com/oauth/token',
       new URLSearchParams({
         grant_type: 'authorization_code',
-        client_id: process.env.KAKAO_REST_KEY,
-        redirect_uri: process.env.KAKAO_REDIRECT_URI,
+        client_id: KAKAO_REST_KEY,          // ✅ REST API 키 사용
+        redirect_uri: KAKAO_REDIRECT_URI,   // ✅ authorize에서 쓴 것과 동일
         code,
-        client_secret: process.env.KAKAO_CLIENT_SECRET || '',
+        // client_secret: process.env.KAKAO_CLIENT_SECRET || '',
       }),
       { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } }
     );
@@ -80,10 +84,18 @@ app.get('/auth/kakao/callback', async (req, res) => {
     });
     const kakaoId = meRes.data.id;
     const kakaoAccount = meRes.data.kakao_account || {};
+
+    // ✅ 이름 계산 로직 (프로필 닉네임 필수 동의 기준)
+    let name = '카카오사용자';
+    if (kakaoAccount.profile && kakaoAccount.profile.nickname) {
+      name = kakaoAccount.profile.nickname;
+    } else if (kakaoAccount.name) {
+      name = kakaoAccount.name;
+    } else if (kakaoAccount.email) {
+      name = kakaoAccount.email.split('@')[0];
+    }
+
     const email = kakaoAccount.email || `kakao_${kakaoId}@noemail.local`;
-    const name =
-      (kakaoAccount.profile && (kakaoAccount.profile.nickname || kakaoAccount.profile.profile_nickname)) ||
-      '카카오사용자';
 
     if (!users.has(email)) {
       users.set(email, { email, name, provider: 'kakao', kakaoId });
