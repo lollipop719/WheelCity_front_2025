@@ -110,6 +110,52 @@ app.get('/auth/kakao/callback', async (req, res) => {
   }
 });
 
+// ===== 크롤링 API =====
+// 장소 정보 크롤링 (선택적 기능 - puppeteer 설치 시 사용 가능)
+let crawlApi = null;
+try {
+  crawlApi = require('./crawl_api');
+  console.log('✅ 크롤링 API 로드됨 (puppeteer 사용 가능)');
+} catch (e) {
+  console.log('⚠️ 크롤링 API 사용 불가 (puppeteer 미설치)');
+}
+
+app.post('/api/crawl/place', async (req, res) => {
+  if (!crawlApi) {
+    return res.status(503).json({ error: 'Crawling service not available' });
+  }
+  
+  const { placeName, placeUrl } = req.body;
+  if (!placeName) {
+    return res.status(400).json({ error: 'placeName is required' });
+  }
+  
+  try {
+    const result = await crawlApi.crawlPlaceInfo(placeName, placeUrl);
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.post('/api/crawl/places', async (req, res) => {
+  if (!crawlApi) {
+    return res.status(503).json({ error: 'Crawling service not available' });
+  }
+  
+  const { places } = req.body;
+  if (!Array.isArray(places)) {
+    return res.status(400).json({ error: 'places array is required' });
+  }
+  
+  try {
+    const results = await crawlApi.crawlMultiplePlaces(places);
+    res.json(results);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // 정적 파일
 app.use(express.static(path.join(__dirname, 'public')));
 

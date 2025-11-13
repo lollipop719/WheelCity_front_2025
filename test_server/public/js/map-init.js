@@ -10,3 +10,4 @@ var places = new kakao.maps.services.Places();
 var markers = [];
 var currentCategory = null;
 
+

@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>카카오맵 카테고리 테스트</title>
+</head>
+<body>
+    <h1>스타벅스 유성구청점 검색 중...</h1>
+    <pre id="result"></pre>
+    
+    <script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey=d96c2bf65fd166e398605c573c95dbae&libraries=services"></script>
+    <script>
+        window.onload = function() {
+            var places = new kakao.maps.services.Places();
+            
+            places.keywordSearch('스타벅스 유성구청점', function(data, status) {
+                var resultDiv = document.getElementById('result');
+                
+                if (status === kakao.maps.services.Status.OK) {
+                    var output = '=== 검색 결과 ===\n\n';
+                    
+                    data.forEach((place, index) => {
+                        output += `${index + 1}. ${place.place_name}\n`;
+                        output += `   전체 카테고리: ${place.category_name}\n`;
+                        
+                        if (place.category_name) {
+                            var categories = place.category_name.split('>').map(c => c.trim());
+                            output += `   카테고리 배열: [${categories.join(', ')}]\n`;
+                            output += `   최하위 분류: ${categories[categories.length - 1]}\n`;
+                        }
+                        
+                        output += `   주소: ${place.address_name}\n`;
+                        output += `   전화: ${place.phone || '없음'}\n`;
+                        output += '\n';
+                    });
+                    
+                    resultDiv.textContent = output;
+                    console.log(output);
+                } else {
+                    resultDiv.textContent = '검색 결과 없음: ' + status;
+                }
+            }, {
+                radius: 20000
+            });
+        };
+    </script>
+</body>
+</html>
+
+

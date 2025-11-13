@@ -76,3 +76,22 @@ document.querySelectorAll('.place-detail-tab').forEach(tab => {
 	});
 });
 
+// 리뷰 작성 버튼 클릭 이벤트
+document.getElementById('reviewWriteBtn').addEventListener('click', function(e) {
+	e.preventDefault();
+	
+	// 현재 표시중인 장소 정보 가져오기
+	var placeName = document.getElementById('placeTitle').textContent;
+	var placeAddress = document.getElementById('placeAddress').textContent;
+	
+	console.log('리뷰 작성 페이지로 이동:', placeName);
+	
+	// TODO: 리뷰 작성 페이지로 이동 (나중에 구현)
+	// 임시로 알림 표시
+	alert('리뷰 작성 페이지는 준비 중입니다.\n\n장소: ' + placeName + '\n주소: ' + placeAddress);
+	
+	// 실제 구현 시에는 아래와 같이 사용:
+	// window.location.href = '/review/write?place=' + encodeURIComponent(placeName);
+});
+
+
