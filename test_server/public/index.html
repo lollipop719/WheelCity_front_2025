@@ -3,7 +3,7 @@
 <head>
 	<meta charset="utf-8"/>
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<title>Kakao 지도</title>
+	<title>휠도시</title>
 	<link rel="preconnect" href="https://fonts.googleapis.com">
 	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 	<link href="https://fonts.googleapis.com/css2?family=Inter:wght@500&display=swap" rel="stylesheet">
@@ -200,6 +200,12 @@
 		font-size: 20px;
 		line-height: 1;
 	}
+	.search-results-close {
+		position: absolute;   /* ✅ 필터 영역의 오른쪽 위에 고정 */
+		right: 26px;
+		top: 16px;
+		margin-left: 0;
+	}
 	.place-detail-info {
 		display: flex;
 		flex-direction: column;
@@ -248,36 +254,38 @@
 		display: flex;
 		gap: 8px;
 		flex-wrap: wrap;
+		position: relative;
+		align-items: center;
 	}
-		.filter-btn {
-			padding: 6px 14px;
-			border: 1px solid #ddd;
-			border-radius: 18px;
-			background: #ffffff;
-			color: #666;
-			font-family: 'Inter', sans-serif;
-			font-weight: 400;
-			font-size: 13px;
-			cursor: pointer;
-			display: flex;
-			align-items: center;
-			gap: 4px;
-			transition: all 0.2s;
-			height: 32px;
-			box-sizing: border-box;
-		}
-		.filter-btn[data-filter="type"] {
-			padding: 6px 11px;
-		}
-		.filter-btn:hover {
-			background: #f9f9f9;
-		}
-		.filter-btn.active {
-			background: #FEE500;
-			border-color: #FEE500;
-			color: #000;
-			font-weight: 500;
-		}
+	.filter-btn {
+		padding: 6px 14px;
+		border: 1px solid #ddd;
+		border-radius: 18px;
+		background: #ffffff;
+		color: #666;
+		font-family: 'Inter', sans-serif;
+		font-weight: 400;
+		font-size: 13px;
+		cursor: pointer;
+		display: flex;
+		align-items: center;
+		gap: 4px;
+		transition: all 0.2s;
+		height: 32px;
+		box-sizing: border-box;
+	}
+	.filter-btn[data-filter="type"] {
+		padding: 6px 11px;
+	}
+	.filter-btn:hover {
+		background: #f9f9f9;
+	}
+	.filter-btn.active {
+		background: #FEE500;
+		border-color: #FEE500;
+		color: #000;
+		font-weight: 500;
+	}
 	.result-list {
 		flex: 1;
 		overflow-y: auto;
@@ -362,6 +370,44 @@
 			font-size: 11px;
 			margin-right: 4px;
 		}
+
+
+		/* === 모바일 전용 레이아웃 조정 (추가) === */
+		@media (max-width: 768px) {
+		/* 검색창을 화면 가로 중앙에 크게 배치 */
+			.search-box {
+				left: 50%;
+				top: 70px;                            /* 필요하면 60~80 사이로 미세조정 */
+				width: calc(100% - 32px);             /* 양 옆 16px 여백 */
+				max-width: 480px;
+				transform: translateX(-50%);          /* 가운데 정렬 */
+				border-radius: 999px;
+			}
+
+			/* 장소 상세/검색 결과 패널을 가운데 카드처럼 */
+			.search-results,
+			.place-detail {
+				left: 50%;
+				transform: translateX(-50%);
+				width: calc(100% - 32px);
+				max-width: 480px;
+			}
+
+			/* 검색 결과 목록 높이/위치 조정 */
+			.search-results {
+				top: 120px;
+				height: calc(100vh - 140px);          /* 화면 높이에 맞춰 스크롤 */
+			}
+
+			/* 상세 카드도 화면 안에 들어오도록 */
+			.place-detail {
+				top: 120px;
+				max-height: calc(100vh - 140px);
+				overflow-y: auto;
+			}
+		}
+		/* === 모바일 전용 레이아웃 조정 (추가) === */
+
 	</style>
 </head>
 <body>
@@ -449,6 +495,8 @@
 				<img src="/img/wheelchair-icon.svg" alt="휠체어" style="width: 13.6px; height: 17px; opacity: 0.8;">
 				<span>화장실</span>
 			</button>
+
+			<div class="place-detail-close search-results-close" id="searchResultsClose">×</div>
 		</div>
 		<div class="result-list" id="resultList"></div>
 	</div>

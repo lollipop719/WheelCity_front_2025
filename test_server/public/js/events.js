@@ -1,13 +1,44 @@
+// 검색 결과창 닫기 버튼
+document.addEventListener('DOMContentLoaded', function () {
+	var closeBtn = document.getElementById('searchResultsClose');
+	var searchResults = document.getElementById('searchResults');
+	var placeDetail = document.getElementById('placeDetail');
+
+	if (closeBtn && searchResults) {
+		closeBtn.addEventListener('click', function () {
+			// 검색 결과 패널 닫기
+			searchResults.style.display = 'none';
+
+			// 혹시 떠 있었을 수 있는 상세 패널도 같이 닫기
+			if (placeDetail) {
+				placeDetail.style.display = 'none';
+			}
+
+			// 지도 위 마커 모두 제거
+			clearAllMarkersFromMap();
+		});
+	}
+});
+
 // 상세 정보 닫기 버튼
 document.getElementById('placeDetailClose').addEventListener('click', function() {
-	// 모든 마커 다시 표시
-	markers.forEach(marker => {
-		marker.setMap(map);
-	});
-	
+	// 지도 위 마커 모두 제거
+	clearAllMarkersFromMap();
+
 	document.getElementById('placeDetail').style.display = 'none';
-	document.getElementById('searchResults').style.display = 'flex';
+	document.getElementById('searchResults').style.display = 'none';   // 원래 flex였는데 none으로 바꿈. 검색 결과창까지 닫기로 변경함. 뒤로가기 버튼을 따로 만드는게 좋을듯.
 });
+
+// 지도 위 검색/상세 마커 전체 지우기
+function clearAllMarkersFromMap() {
+	if (typeof markers !== 'undefined' && Array.isArray(markers)) {
+		markers.forEach(function (marker) {
+			if (marker && typeof marker.setMap === 'function') {
+				marker.setMap(null); // 지도에서 제거
+			}
+		});
+	}
+}
 
 // 검색 버튼 클릭
 document.getElementById('searchBtn').addEventListener('click', function() {
