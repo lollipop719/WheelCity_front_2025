@@ -5,7 +5,7 @@ const KAKAO_JS_KEY = '01785b9a288ab46417b78a3790ac85c5'; // 서버 시작 전 �
 // 로컬 개발용: http://localhost:3000/auth/kakao/callback
 // 프로덕션용: https://test.sbserver.store/auth/kakao/callback
 // 수동으로 설정 - 환경에 맞게 변경하세요
-const KAKAO_REDIRECT_URI = 'https://test.sbserver.store/auth/kakao/callback';
+const KAKAO_REDIRECT_URI = 'http://localhost:3000/auth/kakao/callback';
 
 (function () {
   // ===== 상단 우측 영역 생성 =====
@@ -196,8 +196,27 @@ const KAKAO_REDIRECT_URI = 'https://test.sbserver.store/auth/kakao/callback';
     formSignup.style.display = 'block'; formLogin.style.display = 'none';
   });
 
+  // ===== 휠스코어 업데이트 함수 =====
+  const MAX_SCORE_M = 100; // 휠스코어 바의 최대값 (100m)
+  
+  function updateMypageScore(scoreM) {
+    if (!mypageScoreValue || !mypageScoreBar || !mypageScoreDesc) return;
+    
+    // 숫자 표시: 소수점 첫째자리까지
+    const scoreDisplay = (scoreM || 0).toFixed(1);
+    mypageScoreValue.textContent = scoreDisplay;
+
+    // 설명 문장 업데이트
+    mypageScoreDesc.textContent =
+      `당신이 작성한 리뷰가 ${scoreDisplay}m의 배리어를 없애는 데 기여했어요.`;
+
+    // 바 길이: 0~MAX_SCORE_M 구간을 0~100%로 매핑 (최소 5% 표시)
+    const percent = Math.max(5, Math.min(100, ((scoreM || 0) / MAX_SCORE_M) * 100));
+    mypageScoreBar.style.width = percent + '%';
+  }
+
   // ===== 마이페이지 열고/닫기 =====
-  function openMypage() {
+  async function openMypage() {
     if (!currentUser) return;
 
     // 상단 프로필 정보
@@ -210,22 +229,25 @@ const KAKAO_REDIRECT_URI = 'https://test.sbserver.store/auth/kakao/callback';
       mypageProfileImage.style.display = 'none';
     }
 
-    // TODO: 나중에 실제 휠스코어(m) 값을 API에서 받아오면 교체
-    const dummyScoreM = 320.4; // float 예시
-
-    // 숫자 표시: 소수점 첫째자리까지
-    const scoreDisplay = dummyScoreM.toFixed(1); // "320.4"
-    mypageScoreValue.textContent = scoreDisplay;
-
-    // 설명 문장 업데이트
-    if (mypageScoreDesc) {
-      mypageScoreDesc.textContent =
-        `당신이 작성한 리뷰가 ${scoreDisplay}m의 배리어를 없애는 데 기여했어요.`;
+    // 백엔드에서 실제 휠스코어 가져오기
+    let scoreM = 0.0;
+    try {
+      const kakaoId = currentUser.kakaoId || currentUser.kakao_id;
+      if (kakaoId && window.ReviewAPI && window.ReviewAPI.getOrCreateUserByKakao) {
+        const userInfo = await window.ReviewAPI.getOrCreateUserByKakao(
+          kakaoId,
+          currentUser.email,
+          currentUser.name
+        );
+        scoreM = userInfo.user?.review_score || 0.0;
+      }
+    } catch (error) {
+      console.error('휠스코어 가져오기 실패:', error);
+      scoreM = 0.0;
     }
 
-    // 바 길이: 예시로 0~5000m 구간을 0~100%로 매핑
-    const percent = Math.max(5, Math.min(100, (dummyScoreM / 5000) * 100));
-    mypageScoreBar.style.width = percent + '%';
+    // 점수 업데이트
+    updateMypageScore(scoreM);
 
     // 리뷰 리스트는 나중에 API 붙이기 전까진 더미
     mypageReviewList.innerHTML = `
@@ -234,6 +256,9 @@ const KAKAO_REDIRECT_URI = 'https://test.sbserver.store/auth/kakao/callback';
 
     mypageBackdrop.style.display = 'flex';
   }
+
+  // window에 노출하여 다른 파일에서 호출 가능하도록
+  window.updateMypageScore = updateMypageScore;
 
   function closeMypage() {
     mypageBackdrop.style.display = 'none';

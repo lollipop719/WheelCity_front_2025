@@ -218,6 +218,15 @@ async function submitReview(shopId, reviewData) {
 	});
 }
 
+/**
+ * Get user info by user_id (includes review_score)
+ */
+async function getUserById(userId) {
+	return apiRequest(`/users/${userId}`, {
+		method: 'GET',
+	});
+}
+
 // Export functions for use in other files
 window.ReviewAPI = {
 	getShop,
@@ -227,5 +236,6 @@ window.ReviewAPI = {
 	uploadImageToS3,
 	getOrCreateUserByKakao,
 	submitReview,
+	getUserById,
 };
 

@@ -320,7 +320,33 @@ if (reviewForm) {
 			const result = await window.ReviewService.submitReviewWithImages(shopId, reviewData, imageFiles);
 			
 			console.log('리뷰 저장 완료:', result);
-			alert('리뷰가 저장되었습니다.');
+			
+			// Step 6: Get updated user info to show new review_score
+			try {
+				const updatedUserInfo = await window.ReviewAPI.getOrCreateUserByKakao(
+					kakaoId,
+					user.email,
+					user.name
+				);
+				const newScore = updatedUserInfo.user?.review_score || 0.0;
+				
+				// Determine score increment based on whether photos were uploaded
+				const hasPhotos = imageFiles && imageFiles.length > 0;
+				const scoreIncrement = hasPhotos ? 0.2 : 0.1;
+				const scoreIncrementCm = hasPhotos ? 20 : 10;
+				
+				// Show notification
+				alert(`작성해주신 리뷰 덕분에 ${scoreIncrementCm}cm의 배리어가 없어졌어요!\n\n현재 휠스코어: ${newScore.toFixed(1)}m`);
+				
+				// Update score in UI if mypage is open
+				if (window.updateMypageScore && typeof window.updateMypageScore === 'function') {
+					window.updateMypageScore(newScore);
+				}
+			} catch (scoreError) {
+				console.error('점수 업데이트 실패:', scoreError);
+				// Still show success message even if score update fails
+				alert('리뷰가 저장되었습니다.');
+			}
 			
 			// 폼 초기화
 			reviewForm.reset();
