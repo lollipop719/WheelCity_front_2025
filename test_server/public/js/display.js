@@ -457,7 +457,7 @@ function displayResults(data) {
 // 	
 // 	try {
 // 		// 상대 경로 사용 (현재 페이지와 같은 호스트:포트로 요청)
-// 		const response = await fetch('/api/crawl/blog-reviews', {
+// 		const response = await fetch('/crawl/blog-reviews', {
 // 			method: 'POST',
 // 			headers: {
 // 				'Content-Type': 'application/json'
@@ -822,7 +822,7 @@ async function loadWebsiteInfo(placeId, place) {
 	console.log('[웹사이트] 크롤링 시작 - Place ID:', placeId);
 	
 	try {
-		const response = await fetch('/api/crawl/website', {
+		const response = await fetch('/crawl/website', {
 			method: 'POST',
 			headers: {
 				'Content-Type': 'application/json'
