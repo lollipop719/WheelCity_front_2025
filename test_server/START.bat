@@ -22,6 +22,7 @@ echo 서버 로그:
 echo ========================================
 echo.
 
+cd /d "%~dp0"
 node server.js
 
 pause

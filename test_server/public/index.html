@@ -196,6 +196,12 @@
 		color: #333;
 		font-weight: 700;
 	}
+	.place-detail-tab[data-tab="home"] {
+		margin-left: 9px;
+	}
+	.place-detail-tab[data-tab="review"] {
+		margin-right: 9px;
+	}
 	.place-detail-content {
 		margin-top: 12px;
 		flex: 1;
@@ -551,7 +557,6 @@
 			<div class="place-detail-tab active" data-tab="home">홈</div>
 			<div class="place-detail-tab" data-tab="photo">사진</div>
 			<div class="place-detail-tab" data-tab="review">리뷰</div>
-			<div class="place-detail-tab" data-tab="blog">블로그</div>
 		</div>
 		<div class="place-detail-content">
 			<!-- 홈 탭 컨텐츠 -->
@@ -601,12 +606,6 @@
 			</div>
 			<div id="reviewListContainer"></div>
 		</div>
-			<!-- 블로그 탭 컨텐츠 -->
-			<div class="tab-content" id="tab-blog">
-				<div style="padding: 20px; text-align: center; color: #999;">
-					블로그 정보 준비중
-				</div>
-			</div>
 		</div>
 	</div>
 	<div class="search-results" id="searchResults" style="display: none;">
