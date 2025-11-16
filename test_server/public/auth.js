@@ -4,8 +4,8 @@
 const KAKAO_JS_KEY = '01785b9a288ab46417b78a3790ac85c5'; // 서버 시작 전 반드시 확인하기!
 // 로컬 개발용: http://localhost:3000/auth/kakao/callback
 // 프로덕션용: https://test.sbserver.store/auth/kakao/callback
-// 현재 호스트에 맞춰 자동 설정
-const KAKAO_REDIRECT_URI = window.location.origin + '/auth/kakao/callback';
+// 수동으로 설정 - 환경에 맞게 변경하세요
+const KAKAO_REDIRECT_URI = 'http://localhost:3000/auth/kakao/callback';
 
 (function () {
   // ===== 상단 우측 영역 생성 =====

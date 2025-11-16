@@ -98,22 +98,14 @@ app.post('/api/reviews', (req, res) => {
 app.get('/auth/kakao/callback', async (req, res) => {
   const { code, state } = req.query;
   try {
-    // Auto-detect redirect URI from request (matches frontend's auto-detection)
-    const protocol = req.protocol || 'http';
-    const host = req.get('host') || 'localhost:3000';
-    const autoRedirectUri = `${protocol}://${host}/auth/kakao/callback`;
-    
-    // Use environment variable if set, otherwise use auto-detected URI
-    const redirectUri = KAKAO_REDIRECT_URI || autoRedirectUri;
-    
-    console.log(`[Kakao OAuth] Using redirect URI: ${redirectUri}`);
+    console.log(`[Kakao OAuth] Using redirect URI: ${KAKAO_REDIRECT_URI}`);
     
     const tokenRes = await axios.post(
       'https://kauth.kakao.com/oauth/token',
       new URLSearchParams({
         grant_type: 'authorization_code',
         client_id: KAKAO_REST_KEY,          // ✅ REST API 키 사용
-        redirect_uri: redirectUri,           // ✅ Auto-detected or from env
+        redirect_uri: KAKAO_REDIRECT_URI,    // ✅ Manual setting or from env
         code,
         // client_secret: process.env.KAKAO_CLIENT_SECRET || '',
       }),
@@ -154,7 +146,7 @@ app.get('/auth/kakao/callback', async (req, res) => {
       u.profileImage = profileImage;
     }
 
-    req.session.user = { email, name, provider: 'kakao', profileImage };
+    req.session.user = { email, name, provider: 'kakao', kakaoId: String(kakaoId), profileImage };
 
     const back = state && typeof state === 'string' ? decodeURIComponent(state) : '/';
     res.redirect(back.includes('/auth') ? '/' : back);
