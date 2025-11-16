@@ -302,10 +302,16 @@ function displayResults(data) {
 	});
 }
 
+// 현재 선택된 장소 정보를 전역 변수로 저장 (리뷰 작성 시 사용)
+window.currentPlace = null;
+
 // 매장 상세 정보 표시
 function showPlaceDetail(place, selectedMarker) {
 	// 검색창 비우기
 	document.getElementById('searchInput').value = '';
+	
+	// 현재 선택된 장소 정보 저장 (리뷰 작성 시 사용)
+	window.currentPlace = place;
 	
 	// 디버깅: 전체 카테고리 정보 출력
 	console.log('=== 매장 정보 ===');
