@@ -50,10 +50,58 @@ async function crawlPlaceInfo(placeName, placeUrl) {
             await page.waitForTimeout(2000);
         }
 
-        // 영업시간 정보 추출
+        // 영업시간 정보 추출 (상세 정보 포함)
         const businessHours = await page.evaluate(() => {
             try {
-                // 여러 선택자 시도
+                // 영업 상태 및 시간 추출 (.row_detail)
+                const rowDetail = document.querySelector('.row_detail');
+                if (rowDetail) {
+                    const statusElement = rowDetail.querySelector('.tit_detail');
+                    const timeElement = rowDetail.querySelector('.txt_detail');
+                    
+                    if (statusElement && timeElement) {
+                        const status = statusElement.textContent.trim(); // "영업 중" 또는 "영업 종료"
+                        const time = timeElement.textContent.trim(); // "21:00 까지"
+                        
+                        const result = {
+                            status: status,
+                            time: time,
+                            summary: `${status} · ${time}`
+                        };
+                        
+                        // 요일별 영업시간 상세 정보 추출
+                        const foldDetail = rowDetail.querySelector('.fold_detail');
+                        if (foldDetail) {
+                            const dailyHours = {};
+                            const lineFolds = foldDetail.querySelectorAll('.line_fold');
+                            
+                            lineFolds.forEach(line => {
+                                const dayElement = line.querySelector('.tit_fold');
+                                const hoursElement = line.querySelector('.txt_detail');
+                                
+                                if (dayElement && hoursElement) {
+                                    const day = dayElement.textContent.trim();
+                                    const hours = hoursElement.textContent.trim();
+                                    dailyHours[day] = hours;
+                                }
+                            });
+                            
+                            // 추가 정보 (예: "20:30분 이후로는 테이크아웃만 가능")
+                            const additionalInfo = foldDetail.querySelector('.txt_detail2');
+                            if (additionalInfo) {
+                                result.additionalInfo = additionalInfo.textContent.trim();
+                            }
+                            
+                            if (Object.keys(dailyHours).length > 0) {
+                                result.dailyHours = dailyHours;
+                            }
+                        }
+                        
+                        return result;
+                    }
+                }
+                
+                // 기존 방식 (간단한 텍스트)
                 const selectors = [
                     '.txt_operation',
                     '.operation',
@@ -69,6 +117,7 @@ async function crawlPlaceInfo(placeName, placeUrl) {
                 }
                 return null;
             } catch (e) {
+                console.log('영업시간 추출 오류:', e.message);
                 return null;
             }
         });
@@ -103,7 +152,7 @@ async function crawlPlaceInfo(placeName, placeUrl) {
 
         const result = {
             placeName,
-            businessHours: businessHours || '영업 시간 정보 없음',
+            businessHours: businessHours || null,
             phoneNumber: phoneNumber || null,
             address: address || null,
             crawledAt: new Date().toISOString()
@@ -122,7 +171,7 @@ async function crawlPlaceInfo(placeName, placeUrl) {
         console.error(`[크롤링 실패] ${placeName}:`, error.message);
         return {
             placeName,
-            businessHours: '영업 시간 정보 없음',
+            businessHours: null,
             phoneNumber: null,
             address: null,
             error: error.message

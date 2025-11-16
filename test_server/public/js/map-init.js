@@ -10,6 +10,15 @@ var places = new kakao.maps.services.Places();
 var markers = [];
 var currentCategory = null;
 
+// 현재 지도 중심 좌표를 저장하는 전역 변수
+var currentCenter = map.getCenter();
+
+// 지도 중심이 변경될 때마다 currentCenter 변수 업데이트
+kakao.maps.event.addListener(map, 'center_changed', function() {
+	currentCenter = map.getCenter();
+	console.log('지도 중심 변경됨:', currentCenter.getLat(), currentCenter.getLng());
+});
+
 
 
 

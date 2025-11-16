@@ -51,12 +51,15 @@ async function crawlWebsiteInfo(placeId) {
         // 페이지 로드 대기
         await new Promise(resolve => setTimeout(resolve, 2000));
         
-        // 웹사이트 정보 추출
-        const websiteInfo = await page.evaluate(() => {
-            // 여러 선택자 시도
-            let websiteElement = null;
+        // 웹사이트 정보 및 영업시간 정보 추출
+        const placeInfo = await page.evaluate(() => {
+            const result = {
+                website: null,
+                businessHours: null
+            };
             
-            // 홈페이지 링크 찾기 (다양한 선택자 시도)
+            // 1. 홈페이지 링크 찾기 (다양한 선택자 시도)
+            let websiteElement = null;
             const selectors = [
                 'a.link_homepage',
                 'a[href*="http"]:not([href*="kakao"])',
@@ -87,16 +90,68 @@ async function crawlWebsiteInfo(placeId) {
                 }
                 if (websiteElement) break;
             }
+            result.website = websiteElement;
             
-            return websiteElement;
+            // 2. 영업시간 정보 추출
+            try {
+                // 영업 상태 및 시간 추출 (.row_detail)
+                const rowDetail = document.querySelector('.row_detail');
+                if (rowDetail) {
+                    const statusElement = rowDetail.querySelector('.tit_detail');
+                    const timeElement = rowDetail.querySelector('.txt_detail');
+                    
+                    if (statusElement && timeElement) {
+                        const status = statusElement.textContent.trim(); // "영업 중" 또는 "영업 종료"
+                        const time = timeElement.textContent.trim(); // "21:00 까지"
+                        result.businessHours = {
+                            status: status,
+                            time: time,
+                            summary: `${status} · ${time}`
+                        };
+                        
+                        // 요일별 영업시간 상세 정보 추출
+                        const foldDetail = rowDetail.querySelector('.fold_detail');
+                        if (foldDetail) {
+                            const dailyHours = {};
+                            const lineFolds = foldDetail.querySelectorAll('.line_fold');
+                            
+                            lineFolds.forEach(line => {
+                                const dayElement = line.querySelector('.tit_fold');
+                                const hoursElement = line.querySelector('.txt_detail');
+                                
+                                if (dayElement && hoursElement) {
+                                    const day = dayElement.textContent.trim();
+                                    const hours = hoursElement.textContent.trim();
+                                    dailyHours[day] = hours;
+                                }
+                            });
+                            
+                            // 추가 정보 (예: "20:30분 이후로는 테이크아웃만 가능")
+                            const additionalInfo = foldDetail.querySelector('.txt_detail2');
+                            if (additionalInfo) {
+                                result.businessHours.additionalInfo = additionalInfo.textContent.trim();
+                            }
+                            
+                            if (Object.keys(dailyHours).length > 0) {
+                                result.businessHours.dailyHours = dailyHours;
+                            }
+                        }
+                    }
+                }
+            } catch (error) {
+                console.log('영업시간 정보 추출 실패:', error.message);
+            }
+            
+            return result;
         });
 
-        console.log(`[크롤링 완료] 웹사이트 정보:`, websiteInfo);
+        console.log(`[크롤링 완료] 장소 정보:`, placeInfo);
         
         const result = {
             placeId,
-            website: websiteInfo ? websiteInfo.url : null,
-            displayText: websiteInfo ? websiteInfo.displayText : null,
+            website: placeInfo.website ? placeInfo.website.url : null,
+            displayText: placeInfo.website ? placeInfo.website.displayText : null,
+            businessHours: placeInfo.businessHours,
             crawledAt: new Date().toISOString()
         };
 

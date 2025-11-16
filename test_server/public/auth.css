@@ -5,7 +5,7 @@
   position: absolute;
   z-index: 50;
   right: 24px;
-  top: 24px;
+  top: 59px;  /* 검색창과 같은 높이 */
   display: flex;
   gap: 10px;
   align-items: center;
