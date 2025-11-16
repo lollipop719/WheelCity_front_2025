@@ -144,7 +144,7 @@ function closeReviewModal() {
 // 모달 열기 버튼 - 로그인 확인
 async function checkLoginAndOpenReviewModal() {
 	try {
-		const res = await fetch('/api/me');
+		const res = await fetch('/session/me');
 		const data = await res.json();
 		const user = data.user;
 		
@@ -255,7 +255,7 @@ if (reviewForm) {
 		try {
 			// Step 0: Check login and get user info
 			console.log('로그인 상태 확인 중...');
-			const userRes = await fetch('/api/me');
+			const userRes = await fetch('/session/me');
 			const userData = await userRes.json();
 			const user = userData.user;
 			
@@ -384,7 +384,7 @@ let currentPlaceReviews = [];
 // 사용자 정보 가져오기
 async function getCurrentUser() {
 	try {
-		const res = await fetch('/api/me');
+		const res = await fetch('/session/me');
 		const data = await res.json();
 		return data.user || null;
 	} catch (err) {

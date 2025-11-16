@@ -249,53 +249,51 @@ function updateOpenDetailPanel(place) {
 
 // 단일 장소의 웹사이트 정보 크롤링
 async function enrichWebsiteDataForPlace(place, index) {
-	if (!place.id) {
-		console.log(`[${place.place_name}] Place ID 없음, 웹사이트 크롤링 스킵`);
-		return;
-	}
-	
-	try {
-		const response = await fetch('/api/crawl/website', {
-			method: 'POST',
-			headers: {
-				'Content-Type': 'application/json'
-			},
-			body: JSON.stringify({ placeId: place.id })
-		});
-		
-		if (response.ok) {
-			const result = await response.json();
-			
-			// 웹사이트 정보 업데이트
-			if (result.website) {
-				place.website = result.website;
-				console.log(`[OK] [${place.place_name}] 웹사이트: ${result.website}`);
-			}
-			
-			// 영업시간 정보 업데이트 (웹사이트 여부와 무관하게)
-			if (result.businessHours) {
-				place.businessHours = result.businessHours;
-				console.log(`[OK] [${place.place_name}] 영업시간 업데이트:`, result.businessHours);
-				
-				// 검색 결과 목록 업데이트
-				updateResultItem(index, place);
-				
-				// 현재 열려있는 상세 패널도 업데이트
-				updateOpenDetailPanel(place);
-			}
-			
-			// globalSearchResults 업데이트
-			if (globalSearchResults && globalSearchResults[index]) {
-				globalSearchResults[index] = place;
-			}
-			
-			if (!result.website && !result.businessHours) {
-				console.log(`[INFO] [${place.place_name}] 추가 정보 없음`);
-			}
-		}
-	} catch (error) {
-		console.error(`[ERROR] [${place.place_name}] 웹사이트 크롤링 실패:`, error);
-	}
+  if (!place.id) {
+    console.log(`[${place.place_name}] Place ID 없음, 웹사이트 크롤링 스킵`);
+    return;
+  }
+  
+  try {
+    const response = await fetch('/crawl/website', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ placeId: place.id })
+    });
+    
+    if (response.ok) {
+      const result = await response.json();
+      
+      // 웹사이트 정보 업데이트
+      if (result.website) {
+        place.website = result.website;
+        console.log(`[OK] [${place.place_name}] 웹사이트: ${result.website}`);
+      }
+      
+      // 영업시간 정보 업데이트 (웹사이트 여부와 무관하게)
+      if (result.businessHours) {
+        place.businessHours = result.businessHours;
+        console.log(`[OK] [${place.place_name}] 영업시간 업데이트:`, result.businessHours);
+        
+        // 검색 결과 목록 업데이트
+        updateResultItem(index, place);
+        
+        // 현재 열려있는 상세 패널도 업데이트
+        updateOpenDetailPanel(place);
+      }
+      
+      // globalSearchResults 업데이트
+      if (globalSearchResults && globalSearchResults[index]) {
+        globalSearchResults[index] = place;
+      }
+      
+      if (!result.website && !result.businessHours) {
+        console.log(`[INFO] [${place.place_name}] 추가 정보 없음`);
+      }
+    }
+  } catch (error) {
+    console.error(`[ERROR] [${place.place_name}] 웹사이트 크롤링 실패:`, error);
+  }
 }
-
-

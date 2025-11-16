@@ -5,7 +5,7 @@ const KAKAO_JS_KEY = '01785b9a288ab46417b78a3790ac85c5'; // 서버 시작 전 �
 // 로컬 개발용: http://localhost:3000/auth/kakao/callback
 // 프로덕션용: https://test.sbserver.store/auth/kakao/callback
 // 수동으로 설정 - 환경에 맞게 변경하세요
-const KAKAO_REDIRECT_URI = 'http://localhost:3000/auth/kakao/callback';
+const KAKAO_REDIRECT_URI = 'https://test.sbserver.store/auth/kakao/callback';
 
 (function () {
   // ===== 상단 우측 영역 생성 =====
@@ -290,7 +290,7 @@ const KAKAO_REDIRECT_URI = 'http://localhost:3000/auth/kakao/callback';
   // ===== 로그인 상태 반영 =====
   async function refreshWho() {
     try {
-      const r = await fetch('/api/me');
+      const r = await fetch('/session/me');
       const j = await r.json();
       currentUser = j.user || null;
 
@@ -337,7 +337,7 @@ const KAKAO_REDIRECT_URI = 'http://localhost:3000/auth/kakao/callback';
   // ===== 공통 로그아웃 함수 =====
   async function doLogout() {
     try {
-      await fetch('/api/logout', { method: 'POST' });
+      await fetch('/session/logout', { method: 'POST' });
     } catch (e) {
       console.error(e);
     } finally {
@@ -361,7 +361,7 @@ const KAKAO_REDIRECT_URI = 'http://localhost:3000/auth/kakao/callback';
     e.preventDefault(); loginError.textContent = '';
     const fd = new FormData(formLogin);
     const body = Object.fromEntries(fd.entries());
-    const r = await fetch('/api/login', {
+    const r = await fetch('/session/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body)
@@ -379,7 +379,7 @@ const KAKAO_REDIRECT_URI = 'http://localhost:3000/auth/kakao/callback';
     e.preventDefault(); signupError.textContent = '';
     const fd = new FormData(formSignup);
     const body = Object.fromEntries(fd.entries());
-    const r = await fetch('/api/signup', {
+    const r = await fetch('/session/signup', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body)

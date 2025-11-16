@@ -5,7 +5,9 @@
 
 // Backend API base URL - update this to match your backend server
 // For production, you may want to use an environment variable or config file
-const API_BASE_URL = 'http://127.0.0.1:8000';
+/* 로컬 테스트용이면 http://localhost:8080 사용 */
+/* 실제 서버 호스팅할때는 /api 사용 */
+const API_BASE_URL = '/api';
 
 // API Key for backend authentication
 // Update this to match your backend's API_KEY_INTERNAL

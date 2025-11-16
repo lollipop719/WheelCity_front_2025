@@ -32,12 +32,12 @@ app.use(
 );
 
 // 로그인 상태
-app.get('/api/me', (req, res) => {
+app.get('/session/me', (req, res) => {
   res.json({ user: req.session.user || null });
 });
 
 // 회원가입
-app.post('/api/signup', async (req, res) => {
+app.post('/session/signup', async (req, res) => {
   const { email, name, password } = req.body || {};
   if (!email || !name || !password) return res.status(400).json({ error: '필수 항목 누락' });
   if (users.has(email)) return res.status(409).json({ error: '이미 가입된 이메일' });
@@ -49,7 +49,7 @@ app.post('/api/signup', async (req, res) => {
 });
 
 // 로그인
-app.post('/api/login', async (req, res) => {
+app.post('/session/login', async (req, res) => {
   const { email, password } = req.body || {};
   const u = users.get(email);
   if (!u || u.provider !== 'local') return res.status(401).json({ error: '이메일 또는 비밀번호가 올바르지 않습니다.' });
@@ -65,13 +65,13 @@ app.post('/api/login', async (req, res) => {
 });
 
 // 로그아웃
-app.post('/api/logout', (req, res) => {
+app.post('/session/logout', (req, res) => {
   req.session = null;
   res.json({ ok: true });
 });
 
 // ===== 리뷰 저장 API =====
-app.post('/api/reviews', (req, res) => {
+app.post('/session/reviews', (req, res) => {
   const body = req.body || {};
 
   const review = {
@@ -167,7 +167,7 @@ try {
   console.log('⚠️ 크롤링 API 사용 불가 (puppeteer 미설치)');
 }
 
-app.post('/api/crawl/place', async (req, res) => {
+app.post('/session/crawl/place', async (req, res) => {
   if (!crawlApi) {
     return res.status(503).json({ error: 'Crawling service not available' });
   }
@@ -185,7 +185,7 @@ app.post('/api/crawl/place', async (req, res) => {
   }
 });
 
-app.post('/api/crawl/places', async (req, res) => {
+app.post('/session/crawl/places', async (req, res) => {
   if (!crawlApi) {
     return res.status(503).json({ error: 'Crawling service not available' });
   }
@@ -213,7 +213,10 @@ try {
   console.log('[WARNING] 웹사이트 크롤링 API 사용 불가 (puppeteer 미설치)');
 }
 
-app.post('/api/crawl/website', async (req, res) => {
+// 프론트 서버(3000) 전용 웹사이트 크롤링 API
+// 주의: /api/* 경로는 Nginx에서 FastAPI(8000)으로 프록시되므로
+// 여기서는 /crawl/* 프리픽스를 사용해 충돌을 피한다.
+app.post('/crawl/website', async (req, res) => {
   if (!websiteCrawlApi) {
     return res.status(503).json({ error: 'Website crawling service not available' });
   }
@@ -245,7 +248,7 @@ app.post('/api/crawl/website', async (req, res) => {
 //   console.log('⚠️ 블로그 리뷰 크롤링 API 사용 불가 (puppeteer 미설치)');
 // }
 
-// app.post('/api/crawl/blog-reviews', async (req, res) => {
+// app.post('/session/crawl/blog-reviews', async (req, res) => {
 //   if (!blogCrawlApi) {
 //     return res.status(503).json({ error: 'Blog review crawling service not available' });
 //   }
