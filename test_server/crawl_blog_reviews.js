@@ -107,9 +107,14 @@ async function crawlBlogReviews(placeId) {
                     if (!contentElement) contentElement = element.querySelector('.desc_review');
                     let content = contentElement ? contentElement.textContent.trim() : '';
                     
+                    // 본문에서 "블로그 타이틀" 텍스트 제거
+                    if (content) {
+                        content = content.replace(/블로그 타이틀\s*/g, '').trim();
+                    }
+                    
                     // 본문에서 제목 제거 (제목이 본문에 포함된 경우)
-                    if (content && title && content.startsWith(title)) {
-                        content = content.substring(title.length).trim();
+                    if (content && title && content.includes(title)) {
+                        content = content.replace(title, '').trim();
                     }
                     
                     // 블로그명
@@ -117,6 +122,14 @@ async function crawlBlogReviews(placeId) {
                     if (!blogNameElement) blogNameElement = element.querySelector('.link_name');
                     if (!blogNameElement) blogNameElement = element.querySelector('.name_blog');
                     const blogName = blogNameElement ? blogNameElement.textContent.trim() : '';
+                    
+                    // 본문에서 블로그명 제거 (본문 시작 부분에 있는 경우)
+                    if (content && blogName && content.startsWith(blogName)) {
+                        content = content.substring(blogName.length).trim();
+                    }
+                    
+                    // 남은 구분자 제거 (콜론, 대시, 세로줄 등)
+                    content = content.replace(/^[\s:·\-|]+/, '').trim();
                     
                     // 작성일
                     let dateElement = element.querySelector('.time_blog');
