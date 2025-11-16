@@ -15,7 +15,7 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 /** 데모용 In-Memory DB (실서비스면 DB 사용) */
-const users = new Map(); // email -> { email, name, passwordHash, provider, kakaoId? }
+const users = new Map(); // email -> { email, name, passwordHash?, provider, kakaoId?, profileImage? }
 const reviews = [];      // 간단한 리뷰 저장소
 
 app.use(express.json());
@@ -41,8 +41,8 @@ app.post('/api/signup', async (req, res) => {
   if (users.has(email)) return res.status(409).json({ error: '이미 가입된 이메일' });
 
   const passwordHash = await bcrypt.hash(password, 10);
-  users.set(email, { email, name, passwordHash, provider: 'local' });
-  req.session.user = { email, name, provider: 'local' };
+  users.set(email, { email, name, passwordHash, provider: 'local', profileImage: null });
+  req.session.user = { email, name, provider: 'local', profileImage: null };
   res.json({ ok: true });
 });
 
@@ -53,7 +53,12 @@ app.post('/api/login', async (req, res) => {
   if (!u || u.provider !== 'local') return res.status(401).json({ error: '이메일 또는 비밀번호가 올바르지 않습니다.' });
   const ok = await bcrypt.compare(password, u.passwordHash);
   if (!ok) return res.status(401).json({ error: '이메일 또는 비밀번호가 올바르지 않습니다.' });
-  req.session.user = { email: u.email, name: u.name, provider: 'local' };
+  req.session.user = {
+    email: u.email,
+    name: u.name,
+    provider: 'local',
+    profileImage: u.profileImage || null,
+  };
   res.json({ ok: true });
 });
 
@@ -71,9 +76,9 @@ app.post('/api/reviews', (req, res) => {
     _id: body._id || `dummy_review_${Date.now()}`,
     shop_id: body.shop_id || 'dummy_shop_id',
     user_id: body.user_id || (req.session.user && req.session.user.email) || 'dummy_user_id',
-    enter: !!body.enter,       // could enter or not
-    alone: !!body.alone,       // entered alone or needed help
-    comfort: !!body.comfort,   // moving inside was comfortable
+    enter: body.enter === null ? null : !!body.enter,       // could enter or not
+    alone: body.alone === null ? null : !!body.alone,       // entered alone or needed help
+    comfort: body.comfort === null ? null : !!body.comfort, // moving inside was comfortable
     curb: !!body.curb,         // entrance curb exists
     ramp: !!body.ramp,         // entrance ramp exists
     photo_urls: Array.isArray(body.photo_urls) ? body.photo_urls : [],
@@ -109,11 +114,12 @@ app.get('/auth/kakao/callback', async (req, res) => {
     });
     const kakaoId = meRes.data.id;
     const kakaoAccount = meRes.data.kakao_account || {};
+    const profile = kakaoAccount.profile || {};
 
     // ✅ 이름 계산 로직 (프로필 닉네임 필수 동의 기준)
     let name = '카카오사용자';
-    if (kakaoAccount.profile && kakaoAccount.profile.nickname) {
-      name = kakaoAccount.profile.nickname;
+    if (profile.nickname) {
+      name = profile.nickname;
     } else if (kakaoAccount.name) {
       name = kakaoAccount.name;
     } else if (kakaoAccount.email) {
@@ -121,11 +127,22 @@ app.get('/auth/kakao/callback', async (req, res) => {
     }
 
     const email = kakaoAccount.email || `kakao_${kakaoId}@noemail.local`;
+    const profileImage =
+      profile.profile_image_url ||
+      profile.thumbnail_image_url ||
+      null;
 
     if (!users.has(email)) {
-      users.set(email, { email, name, provider: 'kakao', kakaoId });
+      users.set(email, { email, name, provider: 'kakao', kakaoId, profileImage });
+    } else {
+      const u = users.get(email);
+      u.name = name;
+      u.provider = 'kakao';
+      u.kakaoId = kakaoId;
+      u.profileImage = profileImage;
     }
-    req.session.user = { email, name, provider: 'kakao' };
+
+    req.session.user = { email, name, provider: 'kakao', profileImage };
 
     const back = state && typeof state === 'string' ? decodeURIComponent(state) : '/';
     res.redirect(back.includes('/auth') ? '/' : back);
@@ -213,6 +230,7 @@ app.post('/api/crawl/blog-reviews', async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 });
+
 // 정적 파일
 app.use(express.static(path.join(__dirname, 'public')));
 

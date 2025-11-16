@@ -12,6 +12,7 @@ const KAKAO_REDIRECT_URI = 'https://test.sbserver.store/auth/kakao/callback';  /
     <button class="btn" id="loginOpen">로그인</button>
     <div class="user-menu" id="userMenu" style="display:none;">
       <button class="user-pill" id="userMenuToggle">
+        <img class="user-pill-photo" id="userPillPhoto" src="" alt="" />
         <span class="user-name-pill" id="whoami"></span>
         <span class="caret">▾</span>
       </button>
@@ -88,16 +89,25 @@ const KAKAO_REDIRECT_URI = 'https://test.sbserver.store/auth/kakao/callback';  /
         <div class="mypage-title">마이페이지</div>
         <button class="mypage-close" id="mypageClose">✕</button>
       </div>
+
+      <div class="mypage-profile-box">
+        <img id="mypageProfileImage" class="mypage-profile-photo" src="" alt="프로필 이미지" />
+        <div class="mypage-profile-name" id="mypageProfileName"></div>
+      </div>
+
       <div class="mypage-body">
         <section class="mypage-score-card">
           <div class="mypage-score-row">
             <div class="mypage-score-label">휠스코어</div>
             <div class="mypage-score-value">
-              <span id="mypageScoreValue">0.0</span> km
+              <span id="mypageScoreValue">0.0</span><span class="mypage-score-unit">m</span>
             </div>
           </div>
           <div class="mypage-score-bar-bg">
             <div class="mypage-score-bar-fill" id="mypageScoreBar"></div>
+          </div>
+          <div class="mypage-score-desc" id="mypageScoreDesc">
+            당신이 작성한 리뷰가 0.0m의 배리어를 없애는 데 기여했어요.
           </div>
           <div class="mypage-score-hint">리뷰를 작성할수록 휠스코어가 올라가요.</div>
         </section>
@@ -109,6 +119,7 @@ const KAKAO_REDIRECT_URI = 'https://test.sbserver.store/auth/kakao/callback';  /
           </ul>
         </section>
       </div>
+
       <div class="mypage-footer">
         <button class="mypage-btn-secondary" id="mypageEditProfileBtn">회원정보 수정</button>
         <button class="mypage-btn-primary" id="mypageLogoutBtn">로그아웃</button>
@@ -128,6 +139,7 @@ const KAKAO_REDIRECT_URI = 'https://test.sbserver.store/auth/kakao/callback';  /
   const menuName = document.getElementById('menuName');
   const menuEmail = document.getElementById('menuEmail');
   const menuProvider = document.getElementById('menuProvider');
+  const userPillPhoto = document.getElementById('userPillPhoto');
 
   const modal = document.getElementById('loginBackdrop');
   const sheet = document.getElementById('loginSheet');
@@ -141,13 +153,16 @@ const KAKAO_REDIRECT_URI = 'https://test.sbserver.store/auth/kakao/callback';  /
   const signupError = document.getElementById('signupError');
 
   // 마이페이지 엘리먼트
-  const mypageClose = document.getElementById('mypageClose');
   const mypageSheet = document.getElementById('mypageSheet');
+  const mypageClose = document.getElementById('mypageClose');
   const mypageScoreValue = document.getElementById('mypageScoreValue');
   const mypageScoreBar = document.getElementById('mypageScoreBar');
   const mypageReviewList = document.getElementById('mypageReviewList');
   const mypageEditProfileBtn = document.getElementById('mypageEditProfileBtn');
   const mypageLogoutBtn = document.getElementById('mypageLogoutBtn');
+  const mypageProfileImage = document.getElementById('mypageProfileImage');
+  const mypageProfileName = document.getElementById('mypageProfileName');
+  const mypageScoreDesc = document.getElementById('mypageScoreDesc');
 
   let currentUser = null;
 
@@ -182,13 +197,34 @@ const KAKAO_REDIRECT_URI = 'https://test.sbserver.store/auth/kakao/callback';  /
   function openMypage() {
     if (!currentUser) return;
 
-    // 휠스코어는 아직 로직 없으니 임시로 12.3 km 같은 더미값 사용
-    const dummyScore = 12.3;
-    mypageScoreValue.textContent = dummyScore.toFixed(1);
-    const percent = Math.max(5, Math.min(100, dummyScore * 5)); // 0~20km 기준 대충 비율
+    // 상단 프로필 정보
+    const displayName = currentUser.name || currentUser.email || '사용자';
+    mypageProfileName.textContent = displayName;
+    if (currentUser.profileImage) {
+      mypageProfileImage.src = currentUser.profileImage;
+      mypageProfileImage.style.display = 'block';
+    } else {
+      mypageProfileImage.style.display = 'none';
+    }
+
+    // TODO: 나중에 실제 휠스코어(m) 값을 API에서 받아오면 교체
+    const dummyScoreM = 320.4; // float 예시
+
+    // 숫자 표시: 소수점 첫째자리까지
+    const scoreDisplay = dummyScoreM.toFixed(1); // "320.4"
+    mypageScoreValue.textContent = scoreDisplay;
+
+    // 설명 문장 업데이트
+    if (mypageScoreDesc) {
+      mypageScoreDesc.textContent =
+        `당신이 작성한 리뷰가 ${scoreDisplay}m의 배리어를 없애는 데 기여했어요.`;
+    }
+
+    // 바 길이: 예시로 0~5000m 구간을 0~100%로 매핑
+    const percent = Math.max(5, Math.min(100, (dummyScoreM / 5000) * 100));
     mypageScoreBar.style.width = percent + '%';
 
-    // 리뷰 리스트는 나중에 API 붙이기 전까진 더미 한 줄만 사용
+    // 리뷰 리스트는 나중에 API 붙이기 전까진 더미
     mypageReviewList.innerHTML = `
       <li class="mypage-review-empty">아직 작성한 리뷰가 없습니다.</li>
     `;
@@ -216,8 +252,7 @@ const KAKAO_REDIRECT_URI = 'https://test.sbserver.store/auth/kakao/callback';  /
     openMypage();
   });
 
-  // 바깥 클릭 시 기존 드롭다운을 닫는 로직은 그대로 두되,
-  // 지금은 userMenuPanel 을 사실상 사용하지 않으므로 영향 거의 없음.
+  // 바깥 클릭 시 기존 드롭다운을 닫는 로직
   document.addEventListener('click', (e) => {
     if (!userMenu.contains(e.target)) {
       userMenuPanel.classList.remove('open');
@@ -230,6 +265,14 @@ const KAKAO_REDIRECT_URI = 'https://test.sbserver.store/auth/kakao/callback';  /
       const r = await fetch('/api/me');
       const j = await r.json();
       currentUser = j.user || null;
+
+      if (currentUser && currentUser.profileImage) {
+        userPillPhoto.src = currentUser.profileImage;
+        userPillPhoto.style.display = 'block';
+      } else {
+        userPillPhoto.style.display = 'none';
+      }
+
       if (currentUser) {
         const displayName = currentUser.name || currentUser.email || '사용자';
         const providerText =
