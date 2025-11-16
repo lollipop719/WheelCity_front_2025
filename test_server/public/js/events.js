@@ -141,17 +141,40 @@ function closeReviewModal() {
 	reviewModalBackdrop.style.display = 'none';
 }
 
-// 모달 열기 버튼
+// 모달 열기 버튼 - 로그인 확인
+async function checkLoginAndOpenReviewModal() {
+	try {
+		const res = await fetch('/api/me');
+		const data = await res.json();
+		const user = data.user;
+		
+		if (!user) {
+			alert('리뷰를 작성하려면 로그인이 필요합니다.');
+			// 로그인 모달 열기 (auth.js의 openModal 함수 호출)
+			const loginOpenBtn = document.getElementById('loginOpen');
+			if (loginOpenBtn) {
+				loginOpenBtn.click();
+			}
+			return;
+		}
+		
+		openReviewModal();
+	} catch (error) {
+		console.error('로그인 확인 오류:', error);
+		alert('로그인 상태를 확인할 수 없습니다. 다시 시도해주세요.');
+	}
+}
+
 if (reviewWriteBtn) {
 	reviewWriteBtn.addEventListener('click', function (e) {
 		e.preventDefault();
-		openReviewModal();
+		checkLoginAndOpenReviewModal();
 	});
 }
 if (reviewWriteLinkHome) {
 	reviewWriteLinkHome.addEventListener('click', function (e) {
 		e.preventDefault();
-		openReviewModal();
+		checkLoginAndOpenReviewModal();
 	});
 }
 
@@ -210,73 +233,115 @@ document.querySelectorAll('.review-choice').forEach(function (btn) {
 });
 
 
-// 리뷰 폼 전송 → JSON 생성 후 서버에 저장
+// 리뷰 폼 전송 → 이미지 업로드 후 서버에 저장
 if (reviewForm) {
 	reviewForm.addEventListener('submit', async function (e) {
 		e.preventDefault();
 
-		const payload = {
-			_id: 'dummy_review_id',
-			shop_id: 'dummy_shop_id',
-			user_id: 'dummy_user_id',
+		// 현재 선택된 장소 정보 확인
+		if (!window.currentPlace) {
+			alert('장소 정보를 찾을 수 없습니다. 다시 시도해주세요.');
+			return;
+		}
 
-			// enter는 네/아니오지만, 답을 안 했으면 null 로 둘 수 있게 그대로 유지
-			enter: reviewState.enter === null ? null : !!reviewState.enter,
-			alone: reviewState.alone,   // true / false / null
-
-			curb: !!reviewState.curb,
-			ramp: !!reviewState.ramp,
-
-			comfort: reviewState.comfort === null ? null : !!reviewState.comfort,
-
-			photo_urls: [],
-			review_text: (reviewTextEl && reviewTextEl.value.trim()) || '',
-		};
-
-
-
-		console.log('리뷰 전송 payload:', payload);
+		// 제출 버튼 비활성화 및 로딩 표시
+		const submitBtn = document.getElementById('reviewSubmitBtn');
+		const originalBtnText = submitBtn ? submitBtn.textContent : '저장하기';
+		if (submitBtn) {
+			submitBtn.disabled = true;
+			submitBtn.textContent = '제출 중...';
+		}
 
 		try {
-			const res = await fetch('/api/reviews', {
-				method: 'POST',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify(payload),
-			});
-			const data = await res.json().catch(() => null);
-
-			if (res.ok) {
-				console.log('리뷰 저장 완료:', data);
-				alert('리뷰가 저장되었습니다.');
-				
-				// 리뷰 목록에 추가
-				if (data && data.review) {
-					await addReview(data.review);
-				}
-				
-				// 리뷰 탭으로 자동 전환
-				const reviewTab = document.querySelector('[data-tab="review"]');
-				if (reviewTab) {
-					reviewTab.click();
-				}
-				
-				closeReviewModal();
-				
-				// 폼 초기화
-				reviewForm.reset();
-				reviewState.enter = null;
-				reviewState.alone = null;
-				reviewState.curb = null;
-				reviewState.ramp = null;
-				reviewState.comfort = null;
-				document.querySelectorAll('.review-choice').forEach(b => b.classList.remove('selected'));
-				if (reviewSectionAlone) reviewSectionAlone.style.display = 'none';
-			} else {
-				alert('리뷰 저장에 실패했습니다.');
+			// Step 0: Check login and get user info
+			console.log('로그인 상태 확인 중...');
+			const userRes = await fetch('/api/me');
+			const userData = await userRes.json();
+			const user = userData.user;
+			
+			if (!user) {
+				throw new Error('로그인이 필요합니다. 리뷰를 작성하려면 먼저 로그인해주세요.');
 			}
+			
+			// Get Kakao ID from session
+			const kakaoId = user.kakaoId || user.kakao_id;
+			if (!kakaoId) {
+				throw new Error('Kakao 로그인이 필요합니다. Kakao로 로그인해주세요.');
+			}
+			
+			console.log('Kakao ID:', kakaoId);
+			
+			// Step 1: Get or create user in backend
+			console.log('백엔드에서 사용자 정보 가져오는 중...');
+			const userInfo = await window.ReviewAPI.getOrCreateUserByKakao(
+				kakaoId,
+				user.email,
+				user.name
+			);
+			const userId = userInfo.user_id;
+			
+			if (!userId) {
+				throw new Error('사용자 ID를 가져올 수 없습니다.');
+			}
+			console.log('사용자 ID:', userId);
+			if (userInfo.created) {
+				console.log('새 사용자가 생성되었습니다.');
+			}
+
+			// Step 2: Get or create shop
+			console.log('매장 정보 가져오는 중...');
+			const shop = await window.ReviewAPI.getOrCreateShop(window.currentPlace);
+			const shopId = shop._id || shop.id;
+			
+			if (!shopId) {
+				throw new Error('매장 ID를 가져올 수 없습니다.');
+			}
+			console.log('매장 ID:', shopId);
+
+			// Step 3: Get image files
+			const photoInput = document.getElementById('reviewPhotos');
+			const imageFiles = photoInput && photoInput.files ? Array.from(photoInput.files) : [];
+
+			// Step 4: Prepare review data
+			const reviewData = {
+				user_id: userId,
+				enter: reviewState.enter === null ? null : Boolean(reviewState.enter),
+				alone: reviewState.alone === null ? null : Boolean(reviewState.alone),
+				curb: Boolean(reviewState.curb),
+				ramp: Boolean(reviewState.ramp),
+				comfort: reviewState.comfort === null ? null : Boolean(reviewState.comfort),
+				review_text: (reviewTextEl && reviewTextEl.value.trim()) || '',
+			};
+
+			console.log('리뷰 데이터:', reviewData);
+			console.log('이미지 파일 개수:', imageFiles.length);
+
+			// Step 5: Submit review with images
+			const result = await window.ReviewService.submitReviewWithImages(shopId, reviewData, imageFiles);
+			
+			console.log('리뷰 저장 완료:', result);
+			alert('리뷰가 저장되었습니다.');
+			
+			// 폼 초기화
+			reviewForm.reset();
+			Object.keys(reviewState).forEach(key => {
+				reviewState[key] = key === 'curb' || key === 'ramp' ? false : null;
+			});
+			document.querySelectorAll('.review-choice').forEach(btn => {
+				btn.classList.remove('selected');
+			});
+			if (reviewSectionAlone) reviewSectionAlone.style.display = 'none';
+			
+			closeReviewModal();
 		} catch (err) {
-			console.error(err);
-			alert('리뷰 전송 중 오류가 발생했습니다.');
+			console.error('리뷰 제출 오류:', err);
+			alert('리뷰 전송 중 오류가 발생했습니다: ' + (err.message || '알 수 없는 오류'));
+		} finally {
+			// 제출 버튼 다시 활성화
+			if (submitBtn) {
+				submitBtn.disabled = false;
+				submitBtn.textContent = originalBtnText;
+			}
 		}
 	});
 }

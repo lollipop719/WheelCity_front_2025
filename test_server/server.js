@@ -3,7 +3,9 @@
 
 const KAKAO_JS_KEY = '01785b9a288ab46417b78a3790ac85c5'; // 서버 시작 전 반드시 확인하기!
 const KAKAO_REST_KEY = 'cd7557809738d1512f8d09b00fbe9afb'; // Kakao REST API 키 - 서버에서만 사용
-const KAKAO_REDIRECT_URI = 'https://test.sbserver.store/auth/kakao/callback';  // 서버 시작 전 반드시 확인하기!
+// 로컬 개발용: http://localhost:3000/auth/kakao/callback
+// 프로덕션용: https://test.sbserver.store/auth/kakao/callback
+const KAKAO_REDIRECT_URI = 'https://test.sbserver.store/auth/kakao/callback';
 
 const express = require('express');
 const path = require('path');
@@ -96,12 +98,14 @@ app.post('/api/reviews', (req, res) => {
 app.get('/auth/kakao/callback', async (req, res) => {
   const { code, state } = req.query;
   try {
+    console.log(`[Kakao OAuth] Using redirect URI: ${KAKAO_REDIRECT_URI}`);
+    
     const tokenRes = await axios.post(
       'https://kauth.kakao.com/oauth/token',
       new URLSearchParams({
         grant_type: 'authorization_code',
         client_id: KAKAO_REST_KEY,          // ✅ REST API 키 사용
-        redirect_uri: KAKAO_REDIRECT_URI,   // ✅ authorize에서 쓴 것과 동일
+        redirect_uri: KAKAO_REDIRECT_URI,    // ✅ Manual setting or from env
         code,
         // client_secret: process.env.KAKAO_CLIENT_SECRET || '',
       }),
@@ -142,7 +146,7 @@ app.get('/auth/kakao/callback', async (req, res) => {
       u.profileImage = profileImage;
     }
 
-    req.session.user = { email, name, provider: 'kakao', profileImage };
+    req.session.user = { email, name, provider: 'kakao', kakaoId: String(kakaoId), profileImage };
 
     const back = state && typeof state === 'string' ? decodeURIComponent(state) : '/';
     res.redirect(back.includes('/auth') ? '/' : back);

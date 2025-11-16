@@ -2,7 +2,10 @@
 // 로그인 버튼 UI + 자체 회원가입/로그인 + 카카오 로그인 (팝업 + 상단 유저 메뉴)
 
 const KAKAO_JS_KEY = '01785b9a288ab46417b78a3790ac85c5'; // 서버 시작 전 반드시 확인하기!
-const KAKAO_REDIRECT_URI = 'https://test.sbserver.store/auth/kakao/callback';  // 서버 시작 전 반드시 확인하기!
+// 로컬 개발용: http://localhost:3000/auth/kakao/callback
+// 프로덕션용: https://test.sbserver.store/auth/kakao/callback
+// 수동으로 설정 - 환경에 맞게 변경하세요
+const KAKAO_REDIRECT_URI = 'https://test.sbserver.store/auth/kakao/callback';
 
 (function () {
   // ===== 상단 우측 영역 생성 =====
