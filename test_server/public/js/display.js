@@ -16,17 +16,23 @@ function parseBusinessStatus(hoursInfo) {
 		return result;
 	}
 	
-	// "영업 중 · 22:00에 영업 종료" 형식 파싱
+	// "영업 중 · 21:00 까지" 또는 "영업 중 · 22:00에 영업 종료" 형식 파싱
 	if (hoursInfo.includes('영업 중')) {
 		result.status = '영업중';
 		result.isOpen = true;
 		
-		// "22:00에 영업 종료" 추출
-		var match = hoursInfo.match(/(\d{1,2}):(\d{2})에 영업 종료/);
+		// "21:00 까지" 형식 먼저 확인
+		var match = hoursInfo.match(/(\d{1,2}:\d{2})\s*까지/);
 		if (match) {
-			result.hours = match[0];
+			result.hours = match[1] + '에 영업 종료';
 		} else {
-			result.hours = hoursInfo.replace('영업 중', '').replace('·', '').trim();
+			// "22:00에 영업 종료" 형식 확인
+			match = hoursInfo.match(/(\d{1,2}:\d{2})에 영업 종료/);
+			if (match) {
+				result.hours = match[0];
+			} else {
+				result.hours = hoursInfo.replace('영업 중', '').replace('·', '').trim();
+			}
 		}
 	} 
 	// "영업 종료 · 09:00에 영업 시작" 형식 파싱
@@ -34,9 +40,10 @@ function parseBusinessStatus(hoursInfo) {
 		result.status = '영업종료';
 		result.isOpen = false;
 		
-		var match = hoursInfo.match(/(\d{1,2}):(\d{2})에 영업 시작/);
+		// "09:00에 영업 시작" 형식 확인
+		var match = hoursInfo.match(/(\d{1,2}:\d{2})\s*에 영업 시작/);
 		if (match) {
-			result.hours = match[0];
+			result.hours = '내일 ' + match[1] + ' 오픈';
 		} else {
 			result.hours = hoursInfo.replace('영업 종료', '').replace('·', '').trim();
 		}
@@ -86,6 +93,94 @@ function parseBusinessStatus(hoursInfo) {
 	}
 	
 	return result;
+}
+
+// 다음 영업일 시간 찾기
+function getNextOpenTime(businessHours) {
+	if (!businessHours || !businessHours.dailyHours) {
+		return '영업 시작 시간 확인';
+	}
+	
+	var now = new Date();
+	var dayNames = ['일', '월', '화', '수', '목', '금', '토'];
+	
+	// 내일부터 7일간 확인
+	for (var i = 1; i <= 7; i++) {
+		var targetDate = new Date(now);
+		targetDate.setDate(now.getDate() + i);
+		var dayOfWeek = dayNames[targetDate.getDay()];
+		
+		// dailyHours에서 일치하는 요일 찾기
+		var matchingKey = null;
+		for (var key in businessHours.dailyHours) {
+			if (key.includes(dayOfWeek + '(')) {
+				matchingKey = key;
+				break;
+			}
+		}
+		
+		if (matchingKey) {
+			var hours = businessHours.dailyHours[matchingKey];
+			// "08:00 ~ 21:00" 형식에서 시작 시간 추출
+			var timeMatch = hours.match(/(\d{1,2}:\d{2})/);
+			if (timeMatch) {
+				var dayLabel = i === 1 ? '내일' : (i === 2 ? '모레' : dayOfWeek + '요일');
+				return dayLabel + ' ' + timeMatch[1] + ' 오픈';
+			}
+		}
+	}
+	
+	return '영업 시작 시간 확인';
+}
+
+// 요일별 영업시간 HTML 생성 (앞으로 N일간)
+function generateDailyHoursHtml(dailyHours, daysToShow) {
+	if (!dailyHours || Object.keys(dailyHours).length === 0) {
+		return '';
+	}
+	
+	var now = new Date();
+	var dayNames = ['일', '월', '화', '수', '목', '금', '토'];
+	var html = '';
+	var count = 0;
+	
+	// 오늘부터 순서대로 표시
+	for (var i = 0; i < 7 && count < daysToShow; i++) {
+		var targetDate = new Date(now);
+		targetDate.setDate(now.getDate() + i);
+		
+		var dayOfWeek = dayNames[targetDate.getDay()]; // getDay()로 요일 가져오기
+		var month = targetDate.getMonth() + 1;
+		var date = targetDate.getDate();
+		
+		// dailyHours에서 일치하는 요일 찾기
+		// 형식: "일(11/16)", "월(11/17)" 등
+		var matchingKey = null;
+		for (var key in dailyHours) {
+			if (key.includes(dayOfWeek + '(')) {
+				matchingKey = key;
+				break;
+			}
+		}
+		
+		if (matchingKey) {
+			var hours = dailyHours[matchingKey];
+			var isToday = i === 0;
+			
+			// 오늘은 "오늘"로만 표시, 나머지는 원래대로
+			var dayLabel = isToday ? '오늘' : matchingKey;
+			
+			html += '<div style="display: flex; margin-bottom: 1.5px; padding: 4px 0;">';
+			html += '<span style="' + (isToday ? 'font-weight: 600; color: #333;' : 'color: #666;') + ' min-width: 80px; text-align: left; display: inline-block;">' + 
+				dayLabel + '</span>';
+			html += '<span style="' + (isToday ? 'font-weight: 500; color: #333;' : 'color: #666;') + ' margin-left: 20px;">' + hours + '</span>';
+			html += '</div>';
+			
+			count++;
+		}
+	}
+	
+	return html;
 }
 
 // 접근성 정보 생성 함수 (일관성 있게 랜덤 생성)
@@ -227,17 +322,61 @@ function displayResults(data) {
 	
 	var resultsHtml = '';
 	data.forEach((place, index) => {
-		// 크롤링한 영업시간 정보 사용
-		var hours = place.businessHours || '영업 시간 정보 없음';
-		var status = '영업중'; // 기본값
+		// 영업시간 정보 처리
+		var hoursHtml = '';
 		
-		// 영업시간에서 상태 추출 (예: "영업 중 · 22:00에 영업 종료")
-		if (hours.includes('영업 중')) {
-			status = '영업중';
-		} else if (hours.includes('영업 종료') || hours.includes('휴무')) {
-			status = '영업종료';
-		} else if (hours === '영업 시간 정보 없음') {
-			status = '정보 없음';
+		// 크롤링한 영업시간 정보 확인
+		if (place.businessHours && place.businessHours !== '영업 시간 정보 없음') {
+			var displayText = '';
+			var statusClass = '';
+			
+			// 객체 형태의 영업시간 정보 (새로운 크롤링 방식)
+			if (typeof place.businessHours === 'object' && place.businessHours.summary) {
+				var summary = place.businessHours.summary;
+				
+				// "영업 중 · 21:00 까지" 형식 파싱
+				if (summary.includes('영업 중')) {
+					// "21:00 까지" 추출
+					var timeMatch = summary.match(/(\d{1,2}:\d{2})\s*까지/);
+					if (timeMatch) {
+						displayText = '<span style="color: #00a86b;">영업중</span> · ' + timeMatch[1] + '에 영업 종료';
+					} else {
+						displayText = '<span style="color: #00a86b;">영업중</span>';
+					}
+				} else if (summary.includes('영업 종료')) {
+					// 다음 영업일 찾기 (요일별 영업시간 활용)
+					var nextOpenText = getNextOpenTime(place.businessHours);
+					displayText = '<span style="color: #999;">영업종료</span> · ' + nextOpenText;
+				} else if (summary.includes('휴무')) {
+					// 다음 영업일 찾기
+					var nextOpenText = getNextOpenTime(place.businessHours);
+					displayText = '<span style="color: #f44;">휴무</span> · ' + nextOpenText;
+				} else {
+					// "영업 정보 확인" 같은 불명확한 정보는 표시 안 함
+					displayText = '';
+				}
+			} 
+			// 문자열 형태의 영업시간 정보 (기존 방식)
+			else if (typeof place.businessHours === 'string') {
+				if (place.businessHours.includes('영업 중')) {
+					displayText = '<span style="color: #00a86b;">영업중</span>';
+				} else if (place.businessHours.includes('영업 종료')) {
+					displayText = '<span style="color: #999;">영업종료</span>';
+				} else if (place.businessHours.includes('휴무')) {
+					displayText = '<span style="color: #f44;">휴무</span>';
+				}
+			}
+			
+			// HTML 생성 (한 줄로 표시)
+			if (displayText) {
+				hoursHtml = `<div class="result-hours">${displayText}</div>`;
+			} else {
+				// 영업 정보가 불명확하면 placeholder만 생성 (숨김)
+				hoursHtml = `<div class="result-hours" style="display: none;"></div>`;
+			}
+		} else {
+			// 영업시간 정보가 없어도 placeholder 생성 (나중에 업데이트 가능하도록)
+			hoursHtml = `<div class="result-hours" style="display: none;"></div>`;
 		}
 		
 		// 접근성 정보 생성 및 저장
@@ -265,8 +404,7 @@ function displayResults(data) {
 						<div class="result-header">
 							<div>
 								<h3 class="result-name">${place.place_name}</h3>
-								<div class="result-status">${status}</div>
-								<div class="result-hours">${hours}</div>
+								${hoursHtml}
 							</div>
 						</div>
 						<div class="result-info">
@@ -475,23 +613,137 @@ function showPlaceDetail(place, selectedMarker) {
 	var reviewText = reviewCount >= 1000 ? '리뷰 999+' : '리뷰 ' + reviewCount;
 	document.getElementById('placeReviews').textContent = reviewText;
 	
-	// 주소와 전화번호 (크롤링한 정보 우선 사용)
+	// 주소 표시 (크롤링한 정보 우선 사용)
 	document.getElementById('placeAddress').textContent = 
 		place.crawledAddress || place.address_name || place.road_address_name || '주소 정보 없음';
-	document.getElementById('placePhone').textContent = 
-		place.crawledPhone || place.phone || '전화번호 정보 없음';
+	
+	// 전화번호 표시 (정보 없으면 아예 숨김)
+	var phoneItem = document.querySelector('.place-detail-info-item:has(#placePhone)');
+	if (!phoneItem) {
+		// querySelector 지원 안 하는 경우 대체 방법
+		var phoneElement = document.getElementById('placePhone');
+		if (phoneElement && phoneElement.parentElement) {
+			phoneItem = phoneElement.parentElement.parentElement;
+		}
+	}
+	
+	var phoneNumber = place.crawledPhone || place.phone;
+	if (phoneNumber && phoneNumber !== '전화번호 정보 없음') {
+		document.getElementById('placePhone').textContent = phoneNumber;
+		if (phoneItem) phoneItem.style.display = '';
+	} else {
+		if (phoneItem) phoneItem.style.display = 'none';
+	}
 	
 	// 영업시간 정보 표시 및 영업중/종료 판단
-	var hoursInfo = place.businessHours || '영업 시간 정보 없음';
-	var businessStatus = parseBusinessStatus(hoursInfo);
-	
+	var hoursItem = document.getElementById('hoursItem');
 	var statusElement = document.getElementById('placeStatus');
 	var hoursElement = document.getElementById('placeHours');
+	var hoursDetailElement = document.getElementById('hoursDetail');
+	var hoursMainWrapper = document.getElementById('hoursMainWrapper');
+	var hoursToggle = document.getElementById('hoursToggle');
 	
-	if (statusElement && hoursElement) {
-		statusElement.textContent = businessStatus.status;
-		statusElement.className = 'business-status ' + (businessStatus.isOpen ? 'open' : 'closed');
-		hoursElement.textContent = businessStatus.hours;
+	// 디버깅 로그
+	console.log('=== 영업시간 정보 디버깅 ===');
+	console.log('place.businessHours:', place.businessHours);
+	console.log('typeof place.businessHours:', typeof place.businessHours);
+	if (place.businessHours && typeof place.businessHours === 'object') {
+		console.log('place.businessHours.summary:', place.businessHours.summary);
+		console.log('place.businessHours.dailyHours:', place.businessHours.dailyHours);
+	}
+	console.log('=========================');
+	
+	// 영업시간 정보가 있는지 확인
+	if (place.businessHours && 
+	    place.businessHours !== '영업 시간 정보 없음' && 
+	    typeof place.businessHours === 'object' && 
+	    place.businessHours.summary) {
+		// 크롤링한 영업시간 정보 사용
+		var businessStatus = parseBusinessStatus(place.businessHours.summary);
+		
+		// 영업종료/휴무 시 다음 영업일 정보 추가
+		if (!businessStatus.isOpen && place.businessHours.dailyHours) {
+			var nextOpenText = getNextOpenTime(place.businessHours);
+			if (nextOpenText && nextOpenText !== '영업 시작 시간 확인') {
+				businessStatus.hours = nextOpenText;
+			}
+		}
+		
+		if (statusElement && hoursElement) {
+			statusElement.textContent = businessStatus.status;
+			statusElement.className = 'business-status ' + (businessStatus.isOpen ? 'open' : 'closed');
+			hoursElement.textContent = businessStatus.hours;
+		}
+		
+		// 요일별 영업시간 상세 정보 표시 (앞으로 4일)
+		if (place.businessHours.dailyHours && hoursDetailElement) {
+			var dailyHoursHtml = generateDailyHoursHtml(place.businessHours.dailyHours, 4);
+			
+			if (dailyHoursHtml) {
+				hoursDetailElement.innerHTML = dailyHoursHtml;
+				
+				// 추가 정보 표시
+				if (place.businessHours.additionalInfo) {
+					hoursDetailElement.innerHTML += '<div style="margin-top: 8px; color: #999; font-size: 12px;">' + 
+						place.businessHours.additionalInfo + '</div>';
+				}
+				
+				// 토글 기능 활성화
+				if (hoursToggle) {
+					hoursToggle.style.display = 'inline';
+				}
+				
+				// 클릭 이벤트 (기존 이벤트 제거 후 재등록)
+				if (hoursMainWrapper) {
+					var newWrapper = hoursMainWrapper.cloneNode(true);
+					hoursMainWrapper.parentNode.replaceChild(newWrapper, hoursMainWrapper);
+					
+					newWrapper.addEventListener('click', function() {
+						var toggleImg = document.getElementById('hoursToggle');
+						if (hoursDetailElement.style.display === 'none') {
+							hoursDetailElement.style.display = 'block';
+							if (toggleImg) toggleImg.src = '/img/image-24-1.png'; // 위쪽 화살표
+						} else {
+							hoursDetailElement.style.display = 'none';
+							if (toggleImg) toggleImg.src = '/img/image-24-2.png'; // 아래쪽 화살표
+						}
+					});
+				}
+			} else {
+				// 상세 정보 없으면 토글 숨김
+				if (hoursToggle) hoursToggle.style.display = 'none';
+			}
+		} else {
+			// 상세 정보 없으면 토글 숨김
+			if (hoursToggle) hoursToggle.style.display = 'none';
+		}
+		
+		// 영업시간 정보 표시
+		if (hoursItem) {
+			hoursItem.style.display = '';
+		}
+	} else if (place.businessHours && typeof place.businessHours === 'string' && place.businessHours !== '영업 시간 정보 없음') {
+		// 문자열 형태의 영업시간 정보
+		var businessStatus = parseBusinessStatus(place.businessHours);
+		
+		if (statusElement && hoursElement) {
+			statusElement.textContent = businessStatus.status;
+			statusElement.className = 'business-status ' + (businessStatus.isOpen ? 'open' : 'closed');
+			hoursElement.textContent = businessStatus.hours;
+		}
+		
+		// 토글 숨김
+		if (hoursToggle) hoursToggle.style.display = 'none';
+		
+		// 영업시간 정보 표시
+		if (hoursItem) {
+			hoursItem.style.display = '';
+		}
+	} else {
+		// 영업시간 정보 없음 - 아예 숨기기
+		if (hoursItem) {
+			hoursItem.style.display = 'none';
+		}
 	}
 	
 	// 웹사이트 정보 표시 (기본값: 숨김)

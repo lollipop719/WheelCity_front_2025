@@ -227,10 +227,7 @@
 		line-height: 1;
 	}
 	.search-results-close {
-		position: absolute;   /* ✅ 필터 영역의 오른쪽 위에 고정 */
-		right: 26px;
-		top: 16px;
-		margin-left: 0;
+		display: none;  /* X 버튼 숨김 */
 	}
 	.place-detail-info {
 		display: flex;
@@ -407,20 +404,20 @@
 		color: #333;
 		margin: 0;
 	}
-		.result-status {
-			font-family: 'Inter', sans-serif;
-			font-weight: 400;
-			font-size: 12px;
-			color: #666;
-			margin-top: 4px;
-		}
-		.result-hours {
-			font-family: 'Inter', sans-serif;
-			font-weight: 400;
-			font-size: 12px;
-			color: #999;
-			margin-top: 4px;
-		}
+	.result-status {
+		font-family: 'Inter', sans-serif;
+		font-weight: 400;
+		font-size: 12px;
+		color: #666;
+		margin-top: 4px;
+	}
+	.result-hours {
+		font-family: 'Inter', sans-serif;
+		font-weight: 400;
+		font-size: 12px;
+		color: #666;
+		margin-top: 4px;
+	}
 		.result-info {
 			display: flex;
 			align-items: center;
@@ -570,13 +567,17 @@
 						<span>📞</span>
 						<span id="placePhone">전화번호</span>
 					</div>
-					<div class="place-detail-info-item" id="hoursItem">
-						<span>🕐</span>
-						<span class="hours-wrapper">
+				<div class="place-detail-info-item" id="hoursItem">
+					<span>🕐</span>
+					<div style="flex: 1;">
+						<div class="hours-wrapper" id="hoursMainWrapper" style="cursor: pointer;">
 							<span id="placeStatus" class="business-status">영업중</span>
 							<span id="placeHours">23:00에 영업 종료</span>
-						</span>
+							<img id="hoursToggle" src="/img/image-24-2.png" alt="펼치기" style="margin-left: 4px; width: 12px; height: 12px; display: none;">
+						</div>
+						<div id="hoursDetail" style="display: none; margin-top: 8px; font-size: 13px; color: #666;"></div>
 					</div>
+				</div>
 					<div class="place-detail-info-item" id="websiteItem" style="display: none;">
 						<span>🌐</span>
 						<a id="placeWebsite" href="#" target="_blank" rel="noopener noreferrer" class="website-link">웹사이트</a>
@@ -713,9 +714,9 @@
 	<script src="/js/api.js"></script>
 	<script src="/js/reviewService.js"></script>
 	<script src="/js/map-init.js"></script>
+	<script src="/js/display.js"></script>
 	<script src="/js/search.js"></script>
 	<script src="/js/markers.js"></script>
-	<script src="/js/display.js"></script>
 	<script src="/js/events.js"></script>
 
 </body>
