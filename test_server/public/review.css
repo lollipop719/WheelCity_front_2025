@@ -136,8 +136,13 @@
   border-radius: 10px;
   border: 1px solid #e5e7eb;
   padding: 10px;
+  font-family: 'Inter', sans-serif;
   font-size: 13px;
   box-sizing: border-box;
+}
+
+.review-textarea::placeholder {
+  font-family: 'Inter', sans-serif;
 }
 
 .review-modal-actions {
@@ -168,6 +173,117 @@
 #tab-review {
   border-radius: 0 0 16px 16px !important;
   overflow: hidden;
+}
+
+/* ===== 리뷰 목록 표시 ===== */
+.review-list {
+  padding: 0 20px 20px 20px;
+}
+
+.review-item {
+  border-bottom: 1px solid #f0f0f0;
+  padding: 19px 0;
+  display: flex;
+  gap: 12px;
+}
+
+.review-item:last-child {
+  border-bottom: none;
+}
+
+.review-item-left {
+  flex-shrink: 0;
+  padding-top: 2px;
+}
+
+.review-item-right {
+  flex: 1;
+  min-width: 0;
+}
+
+.review-profile-image {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #e5e7eb;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  color: #666;
+  border: 1px solid #FEE500;
+  box-sizing: border-box;
+}
+
+.review-user-name {
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 12px;
+}
+
+.review-item-photos {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+  overflow-x: auto;
+}
+
+.review-item-photo {
+  width: 100px;
+  height: 100px;
+  border-radius: 8px;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.review-item-text {
+  font-family: 'Inter', sans-serif;
+  font-size: 13px;
+  line-height: 1.6;
+  color: #333;
+  margin-bottom: 12px;
+  white-space: pre-wrap;
+}
+
+.review-item-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.review-action-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 10px;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  background: #fff;
+  cursor: pointer;
+  font-family: 'Inter', sans-serif;
+  font-size: 12px;
+  color: #666;
+  transition: all 0.2s;
+}
+
+.review-action-btn:hover {
+  background: #f9fafb;
+}
+
+.review-action-btn.active {
+  background: #111827;
+  color: #fff;
+  border-color: #111827;
+}
+
+.review-action-btn svg {
+  width: 16px;
+  height: 16px;
+  fill: currentColor;
 }
 
 @media (max-width: 768px) {

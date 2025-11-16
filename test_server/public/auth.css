@@ -53,6 +53,15 @@
   background: #f9fafb;
 }
 
+/* pill 안의 프로필 이미지 */
+.user-pill-photo {
+  width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  object-fit: cover;
+  display: none; /* 이미지 없으면 안 보이게 */
+}
+
 .user-name-pill {
   font-weight: 500;
 }
@@ -224,4 +233,250 @@
   background: #FEE500;
   cursor: pointer;
   font-weight: 700;
+}
+
+/* ===== 마이페이지 패널 (오른쪽 상단 확장형) ===== */
+
+.mypage-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  background: transparent;          /* 화면 전체 어둡게 하지 않음 */
+  display: none;
+  align-items: flex-start;          /* 상단에 붙이기 */
+  justify-content: flex-end;        /* 오른쪽에 붙이기 */
+  padding: 10px 16px 16px 16px;     /* 오른쪽 상단 여백 */
+  box-sizing: border-box;
+}
+
+.mypage-sheet {
+  width: 460px;
+  max-width: min(460px, 100% - 32px);
+  max-height: 80vh;
+  background: #ffffff;
+  border-radius: 18px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.28);
+  padding: 18px 20px 18px 20px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+.mypage-header {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  margin-bottom: 8px;
+}
+
+.mypage-title {
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.mypage-close {
+  position: absolute;
+  top: -2px;
+  right: -4px;
+  cursor: pointer;
+  width: 30px;
+  height: 30px;
+  border-radius: 999px;
+  border: none;
+  background: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  color: #6b7280;
+}
+
+/* 마이페이지 상단 프로필 영역 */
+.mypage-profile-box {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.mypage-profile-photo {
+  width: 40px;
+  height: 40px;
+  border-radius: 999px;
+  object-fit: cover;
+  background: #e5e7eb;
+}
+
+.mypage-profile-name {
+  font-size: 15px;
+  font-weight: 600;
+  color: #111827;
+}
+
+.mypage-body {
+  flex: 1;
+  overflow-y: auto;
+  padding-right: 4px;
+  box-sizing: border-box;
+}
+
+/* 휠스코어 섹션 */
+
+.mypage-score-card {
+  padding: 12px 14px 14px 14px;
+  border-radius: 14px;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  margin-bottom: 14px;
+}
+
+.mypage-score-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.mypage-score-label {
+  font-size: 13px;
+  font-weight: 500;
+  color: #4b5563;
+}
+
+.mypage-score-value {
+  font-size: 17px;
+  font-weight: 600;
+  color: #111827;
+}
+
+.mypage-score-value span {
+  font-size: 21px;
+  margin-right: 4px;
+}
+
+.mypage-score-bar-bg {
+  position: relative;
+  width: 100%;
+  height: 9px;
+  border-radius: 999px;
+  background: #e5e7eb;
+  overflow: hidden;
+}
+
+.mypage-score-bar-fill {
+  position: absolute;
+  inset: 0;
+  width: 40%; /* JS에서 동적으로 수정 가능 */
+  border-radius: 999px;
+  background: linear-gradient(90deg, #22c55e, #16a34a);
+}
+
+.mypage-score-hint {
+  margin-top: 5px;
+  font-size: 11px;
+  color: #9ca3af;
+}
+
+.mypage-score-desc {
+  margin-top: 6px;
+  font-size: 12px;
+  color: #4b5563;
+}
+
+.mypage-score-unit {
+  margin-left: 2px;
+  font-size: 14px;
+  color: #6b7280;
+}
+
+/* 리뷰 리스트 */
+
+.mypage-section-title {
+  font-size: 14px;
+  font-weight: 500;
+  margin: 10px 0 6px 0;
+  color: #374151;
+}
+
+.mypage-review-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+  background: #ffffff;
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+.mypage-review-empty {
+  padding: 16px 14px;
+  font-size: 13px;
+  color: #9ca3af;
+  text-align: center;
+}
+
+.mypage-review-item {
+  padding: 11px 13px;
+  border-bottom: 1px solid #f3f4f6;
+  font-size: 13px;
+  cursor: pointer;
+}
+.mypage-review-item:last-child {
+  border-bottom: none;
+}
+.mypage-review-place {
+  font-weight: 500;
+  color: #111827;
+}
+.mypage-review-meta {
+  margin-top: 2px;
+  font-size: 12px;
+  color: #6b7280;
+}
+
+/* 하단 액션 */
+
+.mypage-footer {
+  margin-top: 12px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.mypage-btn-secondary,
+.mypage-btn-primary {
+  border-radius: 999px;
+  padding: 7px 14px;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.mypage-btn-secondary {
+  border: 1px solid #e5e7eb;
+  background: #f9fafb;
+  color: #374151;
+}
+
+.mypage-btn-primary {
+  border: none;
+  background: #111827;
+  color: #ffffff;
+}
+
+/* 모바일 대응: 화면 좁을 때는 살짝 더 넓게/아래로 */
+
+@media (max-width: 768px) {
+  .mypage-backdrop {
+    align-items: flex-start;
+    justify-content: center;
+    padding-top: 60px;
+  }
+  .mypage-sheet {
+    max-height: 80vh;
+    width: 100%;
+    max-width: 480px;
+  }
 }

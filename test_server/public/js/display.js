@@ -302,22 +302,144 @@ function displayResults(data) {
 	});
 }
 
-// 현재 선택된 장소 정보를 전역 변수로 저장 (리뷰 작성 시 사용)
-window.currentPlace = null;
+// 블로그 리뷰 가져오기 및 표시 (특정 매장 선택 시 자동 실행)
+// async function loadBlogReviews(placeId) {
+// 	const blogContainer = document.getElementById('tab-blog');
+// 	
+// 	// 이미 크롤링된 경우 중복 실행 방지
+// 	if (blogContainer.dataset.loaded === placeId) {
+// 		console.log('ℹ️ 이미 로드된 블로그 리뷰 (중복 크롤링 방지)');
+// 		return;
+// 	}
+// 	
+// 	console.log('📝 블로그 리뷰 크롤링 시작 - Place ID:', placeId);
+// 	console.log('ℹ️ 이 크롤링은 매장 선택 시 자동으로 실행됩니다.');
+// 	
+// 	blogContainer.innerHTML = '<div style="padding: 20px; text-align: center; color: #999;">블로그 리뷰를 불러오는 중...</div>';
+// 	
+// 	try {
+// 		// 상대 경로 사용 (현재 페이지와 같은 호스트:포트로 요청)
+// 		const response = await fetch('/api/crawl/blog-reviews', {
+// 			method: 'POST',
+// 			headers: {
+// 				'Content-Type': 'application/json'
+// 			},
+// 			body: JSON.stringify({ placeId })
+// 		});
+// 		
+// 		if (!response.ok) {
+// 			throw new Error('블로그 리뷰를 불러올 수 없습니다.');
+// 		}
+// 		
+// 		const result = await response.json();
+// 		console.log('✅ 블로그 리뷰 크롤링 완료 - 발견된 리뷰 수:', result.reviews?.length || 0);
+// 		
+// 		// 블로그 리뷰 표시
+// 		displayBlogReviews(result.reviews || []);
+// 		
+// 		// 로드 완료 표시 (중복 크롤링 방지)
+// 		blogContainer.dataset.loaded = placeId;
+// 		
+// 	} catch (error) {
+// 		console.error('❌ 블로그 리뷰 로딩 실패:', error);
+// 		blogContainer.innerHTML = '<div style="padding: 20px; text-align: center; color: #f44;">블로그 리뷰를 불러오는데 실패했습니다.</div>';
+// 	}
+// }
+
+// 블로그 리뷰를 화면에 표시
+// function displayBlogReviews(reviews) {
+// 	const blogContainer = document.getElementById('tab-blog');
+// 	
+// 	if (!reviews || reviews.length === 0) {
+// 		blogContainer.innerHTML = '<div style="padding: 20px; text-align: center; color: #999;">등록된 블로그 리뷰가 없습니다.</div>';
+// 		return;
+// 	}
+// 	
+// 	let html = '<div style="display: flex; flex-direction: column;">';
+// 	
+// 	reviews.forEach((review, index) => {
+// 		// 본문에서 중복된 제목 제거 (블로그명 + 제목이 본문에 포함된 경우)
+// 		let cleanContent = review.content || '';
+// 		if (review.title && cleanContent.includes(review.title)) {
+// 			cleanContent = cleanContent.replace(review.title, '').trim();
+// 		}
+// 		if (review.blogName && cleanContent.startsWith(review.blogName)) {
+// 			cleanContent = cleanContent.replace(review.blogName, '').trim();
+// 		}
+// 		// 남은 구분자 제거
+// 		cleanContent = cleanContent.replace(/^[\s:·\-|]+/, '').trim();
+// 		
+// 		html += `
+// 			<a href="${review.link}" target="_blank" rel="noopener noreferrer" style="text-decoration: none; color: inherit; display: block;">
+// 				<div class="blog-review-item" style="padding: 16px 0; border-bottom: 1px solid #f0f0f0;">
+// 					<!-- 제목 -->
+// 					${review.title ? `
+// 						<h4 style="margin: 0 0 8px 0; font-size: 14px; font-weight: 600; color: #333; line-height: 1.4;">
+// 							${review.title}
+// 						</h4>
+// 					` : ''}
+// 					
+// 					<!-- 썸네일 (제목 아래에 배치) -->
+// 					${review.thumbnail ? `
+// 						<img src="${review.thumbnail}" 
+// 							 alt="블로그 사진" 
+// 							 style="width: 100%; max-height: 200px; object-fit: cover; border-radius: 8px; margin-bottom: 8px;"
+// 							 onerror="this.style.display='none'">
+// 	` : ''}
+// 					
+// 					<!-- 본문 (중복 제거된) -->
+// 					${cleanContent ? `
+// 						<p style="margin: 0 0 8px 0; font-size: 13px; color: #666; line-height: 1.5;">
+// 							${cleanContent}
+// 						</p>
+// 					` : ''}
+// 					
+// 					<!-- 작성일자만 오른쪽 하단에 표시 -->
+// 					${review.date ? `
+// 						<div style="text-align: right; font-size: 11px; color: #999;">
+// 							${review.date}
+// 						</div>
+// 					` : ''}
+// 				</div>
+// 			</a>
+// 		`;
+// 	});
+// 	
+// 	html += '</div>';
+// 	blogContainer.innerHTML = html;
+// }
 
 // 매장 상세 정보 표시
 function showPlaceDetail(place, selectedMarker) {
 	// 검색창 비우기
 	document.getElementById('searchInput').value = '';
 	
-	// 현재 선택된 장소 정보 저장 (리뷰 작성 시 사용)
-	window.currentPlace = place;
+	// 탭을 홈으로 초기화
+	document.querySelectorAll('.place-detail-tab').forEach(t => {
+		t.classList.remove('active');
+	});
+	document.querySelector('.place-detail-tab[data-tab="home"]').classList.add('active');
+	document.querySelectorAll('.tab-content').forEach(content => {
+		content.classList.remove('active');
+	});
+	document.getElementById('tab-home').classList.add('active');
 	
 	// 디버깅: 전체 카테고리 정보 출력
 	console.log('=== 매장 정보 ===');
 	console.log('매장명:', place.place_name);
+	console.log('매장 ID:', place.id);
 	console.log('전체 카테고리:', place.category_name);
 	console.log('주소:', place.address_name);
+	
+	// 현재 선택된 장소 정보를 전역 변수에 저장 (블로그 탭에서 사용)
+	window.currentPlace = place;
+	
+	// 블로그 탭 초기화 (다른 매장 선택 시 이전 데이터 제거)
+	// const blogContainer = document.getElementById('tab-blog');
+	// if (blogContainer) {
+	// 	blogContainer.innerHTML = '<div style="padding: 20px; text-align: center; color: #999;">블로그 정보 준비중</div>';
+	// 	delete blogContainer.dataset.loaded;
+	// }
 	
 	// 매장명
 	document.getElementById('placeTitle').textContent = place.place_name;
@@ -372,17 +494,25 @@ function showPlaceDetail(place, selectedMarker) {
 		hoursElement.textContent = businessStatus.hours;
 	}
 	
-	// 웹사이트 정보 표시 (크롤링 예정)
-	var websiteUrl = place.website || place.place_url;
+	// 웹사이트 정보 표시 (기본값: 숨김)
 	var websiteItem = document.getElementById('websiteItem');
 	var websiteLink = document.getElementById('placeWebsite');
+	websiteItem.style.display = 'none';
 	
-	if (websiteUrl && websiteUrl.includes('http')) {
+	// globalSearchResults에서 해당 place의 최신 정보 찾기
+	if (typeof globalSearchResults !== 'undefined' && globalSearchResults.length > 0 && place.id) {
+		const updatedPlace = globalSearchResults.find(p => p.id === place.id);
+		if (updatedPlace && updatedPlace.website) {
+			place.website = updatedPlace.website;
+			console.log('[OK] globalSearchResults에서 웹사이트 정보 찾음:', place.website);
+		}
+	}
+	
+	// 이미 크롤링된 웹사이트 정보가 있으면 표시
+	if (place.website && place.website.includes('http')) {
 		websiteItem.style.display = 'grid';
-		websiteLink.href = websiteUrl;
-		websiteLink.textContent = websiteUrl.replace(/^https?:\/\/(www\.)?/, '').split('/')[0];
-	} else {
-		websiteItem.style.display = 'none';
+		websiteLink.href = place.website;
+		websiteLink.textContent = place.website.replace(/^https?:\/\/(www\.)?/, '').split('/')[0];
 	}
 	
 	// 접근성 정보 표시 (검색 리스트에서 생성된 정보 사용)
@@ -419,6 +549,57 @@ function showPlaceDetail(place, selectedMarker) {
 	// 검색 결과 패널 숨기고 상세 정보 표시
 	document.getElementById('searchResults').style.display = 'none';
 	document.getElementById('placeDetail').style.display = 'block';
+	
+	// 매장 선택 시 웹사이트 정보 확인 (이미 크롤링되었으면 크롤링하지 않음)
+	if (place.id && !place.website) {
+		console.log('[웹사이트] 정보 없음 - 크롤링 시작');
+		loadWebsiteInfo(place.id, place);
+	} else if (place.website) {
+		console.log('[OK] 웹사이트 정보 이미 있음:', place.website);
+	}
+	
+	// 🔄 매장 선택 시 자동으로 블로그 리뷰 크롤링 시작
+	// if (place.id) {
+	// 	console.log('🔄 매장 선택됨 - 블로그 리뷰 크롤링 자동 시작');
+	// 	loadBlogReviews(place.id);
+	// }
+}
+
+// 웹사이트 정보 가져오기 및 표시 (특정 매장 선택 시 자동 실행)
+async function loadWebsiteInfo(placeId, place) {
+	console.log('[웹사이트] 크롤링 시작 - Place ID:', placeId);
+	
+	try {
+		const response = await fetch('/api/crawl/website', {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json'
+			},
+			body: JSON.stringify({ placeId })
+		});
+		
+		if (!response.ok) {
+			throw new Error('웹사이트 정보를 불러올 수 없습니다.');
+		}
+		
+		const result = await response.json();
+		console.log('[OK] 웹사이트 정보 크롤링 완료:', result.website || '정보 없음');
+		
+		// 웹사이트 정보 표시
+		if (result.website) {
+			place.website = result.website;
+			
+			const websiteItem = document.getElementById('websiteItem');
+			const websiteLink = document.getElementById('placeWebsite');
+			
+			websiteItem.style.display = 'grid';
+			websiteLink.href = result.website;
+			websiteLink.textContent = result.website.replace(/^https?:\/\/(www\.)?/, '').split('/')[0];
+		}
+		
+	} catch (error) {
+		console.error('[ERROR] 웹사이트 정보 로딩 실패:', error);
+	}
 }
 
 

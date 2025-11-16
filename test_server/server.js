@@ -17,7 +17,7 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 /** 데모용 In-Memory DB (실서비스면 DB 사용) */
-const users = new Map(); // email -> { email, name, passwordHash, provider, kakaoId? }
+const users = new Map(); // email -> { email, name, passwordHash?, provider, kakaoId?, profileImage? }
 const reviews = [];      // 간단한 리뷰 저장소
 
 app.use(express.json());
@@ -43,8 +43,8 @@ app.post('/api/signup', async (req, res) => {
   if (users.has(email)) return res.status(409).json({ error: '이미 가입된 이메일' });
 
   const passwordHash = await bcrypt.hash(password, 10);
-  users.set(email, { email, name, passwordHash, provider: 'local' });
-  req.session.user = { email, name, provider: 'local' };
+  users.set(email, { email, name, passwordHash, provider: 'local', profileImage: null });
+  req.session.user = { email, name, provider: 'local', profileImage: null };
   res.json({ ok: true });
 });
 
@@ -55,7 +55,12 @@ app.post('/api/login', async (req, res) => {
   if (!u || u.provider !== 'local') return res.status(401).json({ error: '이메일 또는 비밀번호가 올바르지 않습니다.' });
   const ok = await bcrypt.compare(password, u.passwordHash);
   if (!ok) return res.status(401).json({ error: '이메일 또는 비밀번호가 올바르지 않습니다.' });
-  req.session.user = { email: u.email, name: u.name, provider: 'local' };
+  req.session.user = {
+    email: u.email,
+    name: u.name,
+    provider: 'local',
+    profileImage: u.profileImage || null,
+  };
   res.json({ ok: true });
 });
 
@@ -73,9 +78,9 @@ app.post('/api/reviews', (req, res) => {
     _id: body._id || `dummy_review_${Date.now()}`,
     shop_id: body.shop_id || 'dummy_shop_id',
     user_id: body.user_id || (req.session.user && req.session.user.email) || 'dummy_user_id',
-    enter: !!body.enter,       // could enter or not
-    alone: !!body.alone,       // entered alone or needed help
-    comfort: !!body.comfort,   // moving inside was comfortable
+    enter: body.enter === null ? null : !!body.enter,       // could enter or not
+    alone: body.alone === null ? null : !!body.alone,       // entered alone or needed help
+    comfort: body.comfort === null ? null : !!body.comfort, // moving inside was comfortable
     curb: !!body.curb,         // entrance curb exists
     ramp: !!body.ramp,         // entrance ramp exists
     photo_urls: Array.isArray(body.photo_urls) ? body.photo_urls : [],
@@ -121,11 +126,12 @@ app.get('/auth/kakao/callback', async (req, res) => {
     });
     const kakaoId = meRes.data.id;
     const kakaoAccount = meRes.data.kakao_account || {};
+    const profile = kakaoAccount.profile || {};
 
     // ✅ 이름 계산 로직 (프로필 닉네임 필수 동의 기준)
     let name = '카카오사용자';
-    if (kakaoAccount.profile && kakaoAccount.profile.nickname) {
-      name = kakaoAccount.profile.nickname;
+    if (profile.nickname) {
+      name = profile.nickname;
     } else if (kakaoAccount.name) {
       name = kakaoAccount.name;
     } else if (kakaoAccount.email) {
@@ -133,11 +139,22 @@ app.get('/auth/kakao/callback', async (req, res) => {
     }
 
     const email = kakaoAccount.email || `kakao_${kakaoId}@noemail.local`;
+    const profileImage =
+      profile.profile_image_url ||
+      profile.thumbnail_image_url ||
+      null;
 
     if (!users.has(email)) {
-      users.set(email, { email, name, provider: 'kakao', kakaoId });
+      users.set(email, { email, name, provider: 'kakao', kakaoId, profileImage });
+    } else {
+      const u = users.get(email);
+      u.name = name;
+      u.provider = 'kakao';
+      u.kakaoId = kakaoId;
+      u.profileImage = profileImage;
     }
-    req.session.user = { email, name, provider: 'kakao', kakaoId: String(kakaoId) };
+
+    req.session.user = { email, name, provider: 'kakao', profileImage };
 
     const back = state && typeof state === 'string' ? decodeURIComponent(state) : '/';
     res.redirect(back.includes('/auth') ? '/' : back);
@@ -194,9 +211,72 @@ app.post('/api/crawl/places', async (req, res) => {
   }
 });
 */
+
+// ===== 웹사이트 정보 크롤링 API =====
+let websiteCrawlApi = null;
+try {
+  websiteCrawlApi = require('./crawl_website');
+  console.log('[OK] 웹사이트 크롤링 API 로드됨');
+} catch (e) {
+  console.log('[WARNING] 웹사이트 크롤링 API 사용 불가 (puppeteer 미설치)');
+}
+
+app.post('/api/crawl/website', async (req, res) => {
+  if (!websiteCrawlApi) {
+    return res.status(503).json({ error: 'Website crawling service not available' });
+  }
+  
+  const { placeId } = req.body;
+  if (!placeId) {
+    return res.status(400).json({ error: 'placeId is required' });
+  }
+  
+  console.log(`[웹사이트] 크롤링 요청 - Place ID: ${placeId}`);
+  
+  try {
+    const result = await websiteCrawlApi.crawlWebsiteInfo(placeId);
+    console.log(`[OK] 웹사이트 크롤링 완료 - ${result.website || '정보 없음'}`);
+    res.json(result);
+  } catch (error) {
+    console.error(`[ERROR] 웹사이트 크롤링 실패 - Place ID: ${placeId}`, error.message);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ===== 블로그 리뷰 크롤링 API =====
+// [주석처리됨 - 블로그 탭 제거에 따라 임시 비활성화]
+// let blogCrawlApi = null;
+// try {
+//   blogCrawlApi = require('./crawl_blog_reviews');
+//   console.log('✅ 블로그 리뷰 크롤링 API 로드됨');
+// } catch (e) {
+//   console.log('⚠️ 블로그 리뷰 크롤링 API 사용 불가 (puppeteer 미설치)');
+// }
+
+// app.post('/api/crawl/blog-reviews', async (req, res) => {
+//   if (!blogCrawlApi) {
+//     return res.status(503).json({ error: 'Blog review crawling service not available' });
+//   }
+//   
+//   const { placeId } = req.body;
+//   if (!placeId) {
+//     return res.status(400).json({ error: 'placeId is required' });
+//   }
+//   
+//   console.log(`📝 블로그 리뷰 크롤링 요청 - Place ID: ${placeId}`);
+//   
+//   try {
+//     const result = await blogCrawlApi.crawlBlogReviews(placeId);
+//     console.log(`✅ 블로그 리뷰 크롤링 완료 - ${result.count}개 발견`);
+//     res.json(result);
+//   } catch (error) {
+//     console.error(`❌ 블로그 리뷰 크롤링 실패 - Place ID: ${placeId}`, error.message);
+//     res.status(500).json({ error: error.message });
+//   }
+// });
 // 정적 파일
 app.use(express.static(path.join(__dirname, 'public')));
 
 app.listen(PORT, () => {
-  console.log(`✅ Server is running on http://localhost:${PORT}`);
+  console.log(`[OK] Server is running on http://localhost:${PORT}`);
 });

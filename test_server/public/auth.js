@@ -15,6 +15,7 @@ const KAKAO_REDIRECT_URI = window.location.origin + '/auth/kakao/callback';
     <button class="btn" id="loginOpen">로그인</button>
     <div class="user-menu" id="userMenu" style="display:none;">
       <button class="user-pill" id="userMenuToggle">
+        <img class="user-pill-photo" id="userPillPhoto" src="" alt="" />
         <span class="user-name-pill" id="whoami"></span>
         <span class="caret">▾</span>
       </button>
@@ -30,7 +31,7 @@ const KAKAO_REDIRECT_URI = window.location.origin + '/auth/kakao/callback';
   `;
   document.body.appendChild(userBox);
 
-  // ===== 모달 마크업 삽입 (슬라이드업 대신 중앙 카드) =====
+  // ===== 로그인 모달 마크업 삽입 (슬라이드업 대신 중앙 카드) =====
   const backdrop = document.createElement('div');
   backdrop.className = 'modal-backdrop';
   backdrop.id = 'loginBackdrop';
@@ -81,6 +82,55 @@ const KAKAO_REDIRECT_URI = window.location.origin + '/auth/kakao/callback';
   `;
   document.body.appendChild(backdrop);
 
+  // ===== 마이페이지 모달 삽입 =====
+  const mypageBackdrop = document.createElement('div');
+  mypageBackdrop.className = 'mypage-backdrop';
+  mypageBackdrop.id = 'mypageBackdrop';
+  mypageBackdrop.innerHTML = `
+    <div class="mypage-sheet" id="mypageSheet">
+      <div class="mypage-header">
+        <div class="mypage-title">마이페이지</div>
+        <button class="mypage-close" id="mypageClose">✕</button>
+      </div>
+
+      <div class="mypage-profile-box">
+        <img id="mypageProfileImage" class="mypage-profile-photo" src="" alt="프로필 이미지" />
+        <div class="mypage-profile-name" id="mypageProfileName"></div>
+      </div>
+
+      <div class="mypage-body">
+        <section class="mypage-score-card">
+          <div class="mypage-score-row">
+            <div class="mypage-score-label">휠스코어</div>
+            <div class="mypage-score-value">
+              <span id="mypageScoreValue">0.0</span><span class="mypage-score-unit">m</span>
+            </div>
+          </div>
+          <div class="mypage-score-bar-bg">
+            <div class="mypage-score-bar-fill" id="mypageScoreBar"></div>
+          </div>
+          <div class="mypage-score-desc" id="mypageScoreDesc">
+            당신이 작성한 리뷰가 0.0m의 배리어를 없애는 데 기여했어요.
+          </div>
+          <div class="mypage-score-hint">리뷰를 작성할수록 휠스코어가 올라가요.</div>
+        </section>
+
+        <section>
+          <div class="mypage-section-title">내가 쓴 리뷰</div>
+          <ul class="mypage-review-list" id="mypageReviewList">
+            <li class="mypage-review-empty">아직 작성한 리뷰가 없습니다.</li>
+          </ul>
+        </section>
+      </div>
+
+      <div class="mypage-footer">
+        <button class="mypage-btn-secondary" id="mypageEditProfileBtn">회원정보 수정</button>
+        <button class="mypage-btn-primary" id="mypageLogoutBtn">로그아웃</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(mypageBackdrop);
+
   // ===== 엘리먼트 참조 =====
   const loginOpenBtn = document.getElementById('loginOpen');
   const userMenu = document.getElementById('userMenu');
@@ -92,6 +142,7 @@ const KAKAO_REDIRECT_URI = window.location.origin + '/auth/kakao/callback';
   const menuName = document.getElementById('menuName');
   const menuEmail = document.getElementById('menuEmail');
   const menuProvider = document.getElementById('menuProvider');
+  const userPillPhoto = document.getElementById('userPillPhoto');
 
   const modal = document.getElementById('loginBackdrop');
   const sheet = document.getElementById('loginSheet');
@@ -104,9 +155,21 @@ const KAKAO_REDIRECT_URI = window.location.origin + '/auth/kakao/callback';
   const loginError = document.getElementById('loginError');
   const signupError = document.getElementById('signupError');
 
+  // 마이페이지 엘리먼트
+  const mypageSheet = document.getElementById('mypageSheet');
+  const mypageClose = document.getElementById('mypageClose');
+  const mypageScoreValue = document.getElementById('mypageScoreValue');
+  const mypageScoreBar = document.getElementById('mypageScoreBar');
+  const mypageReviewList = document.getElementById('mypageReviewList');
+  const mypageEditProfileBtn = document.getElementById('mypageEditProfileBtn');
+  const mypageLogoutBtn = document.getElementById('mypageLogoutBtn');
+  const mypageProfileImage = document.getElementById('mypageProfileImage');
+  const mypageProfileName = document.getElementById('mypageProfileName');
+  const mypageScoreDesc = document.getElementById('mypageScoreDesc');
+
   let currentUser = null;
 
-  // ===== 모달 열고/닫기 =====
+  // ===== 로그인 모달 열고/닫기 =====
   function openModal() {
     modal.style.display = 'flex';          // 중앙 정렬 위해 flex
     requestAnimationFrame(() => sheet.classList.add('open'));
@@ -133,11 +196,66 @@ const KAKAO_REDIRECT_URI = window.location.origin + '/auth/kakao/callback';
     formSignup.style.display = 'block'; formLogin.style.display = 'none';
   });
 
-  // ===== 유저 메뉴 토글 =====
-  userMenuToggle.addEventListener('click', () => {
-    userMenuPanel.classList.toggle('open');
+  // ===== 마이페이지 열고/닫기 =====
+  function openMypage() {
+    if (!currentUser) return;
+
+    // 상단 프로필 정보
+    const displayName = currentUser.name || currentUser.email || '사용자';
+    mypageProfileName.textContent = displayName;
+    if (currentUser.profileImage) {
+      mypageProfileImage.src = currentUser.profileImage;
+      mypageProfileImage.style.display = 'block';
+    } else {
+      mypageProfileImage.style.display = 'none';
+    }
+
+    // TODO: 나중에 실제 휠스코어(m) 값을 API에서 받아오면 교체
+    const dummyScoreM = 320.4; // float 예시
+
+    // 숫자 표시: 소수점 첫째자리까지
+    const scoreDisplay = dummyScoreM.toFixed(1); // "320.4"
+    mypageScoreValue.textContent = scoreDisplay;
+
+    // 설명 문장 업데이트
+    if (mypageScoreDesc) {
+      mypageScoreDesc.textContent =
+        `당신이 작성한 리뷰가 ${scoreDisplay}m의 배리어를 없애는 데 기여했어요.`;
+    }
+
+    // 바 길이: 예시로 0~5000m 구간을 0~100%로 매핑
+    const percent = Math.max(5, Math.min(100, (dummyScoreM / 5000) * 100));
+    mypageScoreBar.style.width = percent + '%';
+
+    // 리뷰 리스트는 나중에 API 붙이기 전까진 더미
+    mypageReviewList.innerHTML = `
+      <li class="mypage-review-empty">아직 작성한 리뷰가 없습니다.</li>
+    `;
+
+    mypageBackdrop.style.display = 'flex';
+  }
+
+  function closeMypage() {
+    mypageBackdrop.style.display = 'none';
+  }
+
+  mypageClose.addEventListener('click', closeMypage);
+  mypageBackdrop.addEventListener('click', (e) => {
+    if (e.target === mypageBackdrop) closeMypage();
   });
-  // 모달/유저메뉴 외 영역 클릭 시 메뉴 닫기
+  window.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      closeMypage();
+    }
+  });
+
+  // 기존 작은 드롭다운 대신, 이름 pill을 누르면 마이페이지 열기
+  userMenuToggle.addEventListener('click', (e) => {
+    e.preventDefault();
+    openMypage();
+  });
+
+  // 바깥 클릭 시 기존 드롭다운을 닫는 로직
   document.addEventListener('click', (e) => {
     if (!userMenu.contains(e.target)) {
       userMenuPanel.classList.remove('open');
@@ -150,6 +268,14 @@ const KAKAO_REDIRECT_URI = window.location.origin + '/auth/kakao/callback';
       const r = await fetch('/api/me');
       const j = await r.json();
       currentUser = j.user || null;
+
+      if (currentUser && currentUser.profileImage) {
+        userPillPhoto.src = currentUser.profileImage;
+        userPillPhoto.style.display = 'block';
+      } else {
+        userPillPhoto.style.display = 'none';
+      }
+
       if (currentUser) {
         const displayName = currentUser.name || currentUser.email || '사용자';
         const providerText =
@@ -173,14 +299,37 @@ const KAKAO_REDIRECT_URI = window.location.origin + '/auth/kakao/callback';
         loginOpenBtn.style.display = 'inline-flex';
         userMenu.style.display = 'none';
         userMenuPanel.classList.remove('open');
+        closeMypage();
       }
     } catch {
-      // 에러 시에는 그냥 로그인 안 된 상태처럼 보이게 둡니다.
       loginOpenBtn.style.display = 'inline-flex';
       userMenu.style.display = 'none';
       userMenuPanel.classList.remove('open');
+      closeMypage();
     }
   }
+
+  // ===== 공통 로그아웃 함수 =====
+  async function doLogout() {
+    try {
+      await fetch('/api/logout', { method: 'POST' });
+    } catch (e) {
+      console.error(e);
+    } finally {
+      closeMypage();
+      refreshWho();
+    }
+  }
+
+  // 기존 작은 메뉴의 로그아웃 버튼
+  logoutBtn.addEventListener('click', doLogout);
+  // 마이페이지 하단 로그아웃 버튼
+  mypageLogoutBtn.addEventListener('click', doLogout);
+
+  // 회원정보 수정 버튼 (지금은 알림만)
+  mypageEditProfileBtn.addEventListener('click', () => {
+    alert('회원정보 수정 화면은 아직 준비 중입니다.');
+  });
 
   // ===== 폼 제출 =====
   formLogin.addEventListener('submit', async (e) => {
@@ -217,12 +366,6 @@ const KAKAO_REDIRECT_URI = window.location.origin + '/auth/kakao/callback';
       const j = await r.json().catch(() => ({}));
       signupError.textContent = j.error || '회원가입 실패';
     }
-  });
-
-  // ===== 로그아웃 =====
-  logoutBtn.addEventListener('click', async () => {
-    await fetch('/api/logout', { method: 'POST' });
-    refreshWho();
   });
 
   // ===== Kakao OAuth (JS SDK → authorize 리다이렉트) =====

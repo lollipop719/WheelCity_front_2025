@@ -104,6 +104,11 @@ document.querySelectorAll('.place-detail-tab').forEach(tab => {
 		}
 		
 		console.log('탭 선택:', tabName);
+		
+		// 블로그 탭 선택 시 - 이미 매장 선택 시 자동으로 크롤링되므로 여기서는 처리하지 않음
+		// if (tabName === 'blog') {
+		// 	console.log('ℹ️ 블로그 탭 선택됨 (크롤링은 매장 선택 시 자동 실행됨)');
+		// }
 	});
 });
 
@@ -342,3 +347,119 @@ if (reviewForm) {
 }
 
 // 리뷰 작성 모달 끝
+
+// ===== 리뷰 목록 표시 =====
+const reviewListContainer = document.getElementById('reviewListContainer');
+const reviewEmptyText = document.querySelector('.review-empty-text');
+
+// 임시 리뷰 저장소 (서버에서 가져올 때까지)
+let currentPlaceReviews = [];
+
+// 사용자 정보 가져오기
+async function getCurrentUser() {
+	try {
+		const res = await fetch('/api/me');
+		const data = await res.json();
+		return data.user || null;
+	} catch (err) {
+		console.error('사용자 정보 가져오기 실패:', err);
+		return null;
+	}
+}
+
+// 리뷰 목록 렌더링
+function renderReviews() {
+	if (!reviewListContainer) return;
+
+	if (currentPlaceReviews.length === 0) {
+		if (reviewEmptyText) reviewEmptyText.style.display = 'block';
+		reviewListContainer.innerHTML = '';
+		return;
+	}
+
+	if (reviewEmptyText) reviewEmptyText.style.display = 'none';
+
+	const reviewsHtml = currentPlaceReviews.map((review, index) => {
+		const userName = review.user_name || '익명';
+		const userInitial = userName.charAt(0).toUpperCase();
+		const reviewText = review.review_text || '';
+		const photos = review.photo_urls || [];
+		
+		// 사진 HTML
+		const photosHtml = photos.length > 0 
+			? `<div class="review-item-photos">
+				${photos.map(url => `<img src="${url}" alt="리뷰 사진" class="review-item-photo">`).join('')}
+			</div>`
+			: '';
+
+		return `
+			<div class="review-item" data-review-id="${review._id || index}">
+				<div class="review-item-left">
+					<div class="review-profile-image">${userInitial}</div>
+				</div>
+				<div class="review-item-right">
+					<div class="review-user-name">${userName}</div>
+					${photosHtml}
+					${reviewText ? `<div class="review-item-text">${reviewText}</div>` : ''}
+					<div class="review-item-actions">
+						<button class="review-action-btn" data-action="like" data-review-id="${review._id || index}">
+							<svg viewBox="0 0 24 24">
+								<path d="M7.493 18.75c-.425 0-.82-.236-.975-.632A7.48 7.48 0 016 15.375c0-1.75.599-3.358 1.602-4.634.151-.192.373-.309.6-.397.473-.183.89-.514 1.212-.924a9.042 9.042 0 012.861-2.4c.723-.384 1.35-.956 1.653-1.715a4.498 4.498 0 00.322-1.672V3a.75.75 0 01.75-.75 2.25 2.25 0 012.25 2.25c0 1.152-.26 2.243-.723 3.218-.266.558.107 1.282.725 1.282h3.126c1.026 0 1.945.694 2.054 1.715.045.422.068.85.068 1.285a11.95 11.95 0 01-2.649 7.521c-.388.482-.987.729-1.605.729H14.23c-.483 0-.964-.078-1.423-.23l-3.114-1.04a4.501 4.501 0 00-1.423-.23h-.777zM2.331 10.977a11.969 11.969 0 00-.831 4.398 12 12 0 00.52 3.507c.26.85 1.084 1.368 1.973 1.368H4.9c.445 0 .72-.498.523-.898a8.963 8.963 0 01-.924-3.977c0-1.708.476-3.305 1.302-4.666.245-.403-.028-.959-.5-.959H4.25c-.832 0-1.612.453-1.918 1.227z"/>
+							</svg>
+							<span class="review-action-count">0</span>
+						</button>
+						<button class="review-action-btn" data-action="dislike" data-review-id="${review._id || index}">
+							<svg viewBox="0 0 24 24" style="transform: rotate(180deg);">
+								<path d="M7.493 18.75c-.425 0-.82-.236-.975-.632A7.48 7.48 0 016 15.375c0-1.75.599-3.358 1.602-4.634.151-.192.373-.309.6-.397.473-.183.89-.514 1.212-.924a9.042 9.042 0 012.861-2.4c.723-.384 1.35-.956 1.653-1.715a4.498 4.498 0 00.322-1.672V3a.75.75 0 01.75-.75 2.25 2.25 0 012.25 2.25c0 1.152-.26 2.243-.723 3.218-.266.558.107 1.282.725 1.282h3.126c1.026 0 1.945.694 2.054 1.715.045.422.068.85.068 1.285a11.95 11.95 0 01-2.649 7.521c-.388.482-.987.729-1.605.729H14.23c-.483 0-.964-.078-1.423-.23l-3.114-1.04a4.501 4.501 0 00-1.423-.23h-.777zM2.331 10.977a11.969 11.969 0 00-.831 4.398 12 12 0 00.52 3.507c.26.85 1.084 1.368 1.973 1.368H4.9c.445 0 .72-.498.523-.898a8.963 8.963 0 01-.924-3.977c0-1.708.476-3.305 1.302-4.666.245-.403-.028-.959-.5-.959H4.25c-.832 0-1.612.453-1.918 1.227z"/>
+							</svg>
+							<span class="review-action-count">0</span>
+						</button>
+					</div>
+				</div>
+			</div>
+		`;
+	}).join('');
+
+	reviewListContainer.innerHTML = `<div class="review-list">${reviewsHtml}</div>`;
+
+	// 추천/비추천 버튼 이벤트 리스너 추가
+	document.querySelectorAll('.review-action-btn').forEach(btn => {
+		btn.addEventListener('click', function() {
+			const action = this.dataset.action;
+			const reviewId = this.dataset.reviewId;
+			
+			// 같은 리뷰의 다른 액션 버튼들
+			const reviewItem = this.closest('.review-item');
+			const allActionBtns = reviewItem.querySelectorAll('.review-action-btn');
+			
+			// 이미 활성화된 버튼을 다시 클릭하면 취소
+			if (this.classList.contains('active')) {
+				this.classList.remove('active');
+			} else {
+				// 다른 버튼 비활성화
+				allActionBtns.forEach(b => b.classList.remove('active'));
+				// 현재 버튼 활성화
+				this.classList.add('active');
+			}
+			
+			console.log(`리뷰 ${reviewId}에 ${action} 액션`);
+		});
+	});
+}
+
+// 리뷰 추가 (저장 후 호출)
+async function addReview(review) {
+	const user = await getCurrentUser();
+	const reviewWithUser = {
+		...review,
+		user_name: user ? (user.name || user.email || '익명') : '익명'
+	};
+	currentPlaceReviews.push(reviewWithUser);
+	renderReviews();
+}
+
+// 리뷰 목록 초기화
+function clearReviews() {
+	currentPlaceReviews = [];
+	renderReviews();
+}
