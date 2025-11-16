@@ -184,38 +184,18 @@ document.querySelectorAll('.review-choice').forEach(function (btn) {
       reviewState[field] = value;
     }
 
-    // ✅ 조건부 질문 노출/숨김 로직
-
-    // 1) 입구에 들어갈 수 있었나요? → alone 섹션
+    // ✅ enter → alone 섹션 표시/숨김 로직만 유지
     if (field === 'enter') {
       if (value === true) {
-        // 있어요 → 혼자서 들어갔나요? 보이기
+        // 입구에 들어갈 수 있음 → 혼자/도움 질문 보이기
         if (reviewSectionAlone) reviewSectionAlone.style.display = 'block';
       } else {
-        // 없어요 → 섹션 숨기고, 선택 초기화 + JSON null
+        // 입구에 들어갈 수 없음 → 섹션 숨기고 alone 초기화(null)
         if (reviewSectionAlone) reviewSectionAlone.style.display = 'none';
 
         reviewState.alone = null;
         document
           .querySelectorAll('.review-choice[data-field="alone"]')
-          .forEach(function (b) {
-            b.classList.remove('selected');
-          });
-      }
-    }
-
-    // 2) 입구에 턱이 있었나요? → ramp 섹션
-    if (field === 'curb') {
-      if (value === true) {
-        // 턱 있어요 → 경사로 질문 보이기
-        if (reviewSectionRamp) reviewSectionRamp.style.display = 'block';
-      } else {
-        // 턱 없어요 → 경사로 섹션 숨기고 JSON null
-        if (reviewSectionRamp) reviewSectionRamp.style.display = 'none';
-
-        reviewState.ramp = null;
-        document
-          .querySelectorAll('.review-choice[data-field="ramp"]')
           .forEach(function (b) {
             b.classList.remove('selected');
           });
@@ -235,19 +215,19 @@ if (reviewForm) {
 			shop_id: 'dummy_shop_id',
 			user_id: 'dummy_user_id',
 
-			// 입구는 항상 true/false 로 사용
+			// enter는 네/아니오지만, 답을 안 했으면 null 로 둘 수 있게 그대로 유지
 			enter: reviewState.enter === null ? null : !!reviewState.enter,
+			alone: reviewState.alone,   // true / false / null
 
-			// 조건부 질문들은 null 허용
-			alone: reviewState.alone,   // enter = false 이면 null
-			curb: reviewState.curb === null ? null : !!reviewState.curb,
-			ramp: reviewState.ramp,     // curb = false 이면 null
+			curb: !!reviewState.curb,
+			ramp: !!reviewState.ramp,
 
 			comfort: reviewState.comfort === null ? null : !!reviewState.comfort,
 
 			photo_urls: [],
 			review_text: (reviewTextEl && reviewTextEl.value.trim()) || '',
 		};
+
 
 
 		console.log('리뷰 전송 payload:', payload);
