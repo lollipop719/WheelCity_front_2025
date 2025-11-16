@@ -4,9 +4,12 @@
 	<meta charset="utf-8"/>
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 	<title>휠도시</title>
+	<!-- 폰트 링크 -->
 	<link rel="preconnect" href="https://fonts.googleapis.com">
 	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 	<link href="https://fonts.googleapis.com/css2?family=Inter:wght@500&display=swap" rel="stylesheet">
+	<!-- 리뷰 작성 모달용 css -->
+	<link rel="stylesheet" href="/review.css">
 	<style>
 		html, body {
 			margin: 0;
@@ -538,9 +541,9 @@
 				</div>
 				<div class="review-prompt">
 					<span>이 장소에 다녀오셨나요?</span>
-					<a href="#" class="review-write-link" id="reviewWriteBtn">
-						리뷰 작성하기<img src="/img/arrow-right.png" alt=">" class="arrow-icon" />
-					</a>
+						<a href="#" class="review-write-link" id="reviewWriteLinkHome">
+							리뷰 작성하기<img src="/img/arrow-right.png" alt=">" class="arrow-icon" />
+						</a>
 				</div>
 			</div>
 			<!-- 사진 탭 컨텐츠 -->
@@ -551,8 +554,12 @@
 			</div>
 			<!-- 리뷰 탭 컨텐츠 -->
 			<div class="tab-content" id="tab-review">
-				<div style="padding: 20px; text-align: center; color: #999;">
-					리뷰 정보 준비중
+				<div class="review-header">
+					<span class="review-title">리뷰 정보 준비중</span>
+					<button class="review-write-btn" id="reviewWriteBtn">리뷰 작성하기</button>
+				</div>
+				<div class="review-empty-text">
+					아직 등록된 리뷰가 없습니다.
 				</div>
 			</div>
 			<!-- 블로그 탭 컨텐츠 -->
@@ -584,6 +591,81 @@
 		<div class="result-list" id="resultList"></div>
 	</div>
 	<div id="map"></div>
+
+	<!-- 리뷰 작성 모달 -->
+	<div class="review-modal-backdrop" id="reviewModalBackdrop">
+		<div class="review-modal-sheet">
+			<div class="review-modal-header">
+				<h3>리뷰 작성</h3>
+				<div class="review-modal-close" id="reviewModalClose">×</div>
+			</div>
+				<div class="review-modal-body">
+				<form id="reviewForm">
+					<div class="review-modal-section">
+						<div class="review-modal-section-title">입구에 들어갈 수 있었나요?</div>
+						<div class="review-choice-group">
+							<button type="button" class="review-choice" data-field="enter" data-value="true">있어요</button>
+							<button type="button" class="review-choice" data-field="enter" data-value="false">없어요</button>
+						</div>
+					</div>
+
+					<div class="review-modal-section" id="reviewSectionAlone" style="display:none;">
+						<div class="review-modal-section-title">혼자서 들어가셨나요, 도움이 필요했나요?</div>
+						<div class="review-choice-group">
+							<button type="button" class="review-choice" data-field="alone" data-value="true">혼자서 들어갔어요</button>
+							<button type="button" class="review-choice" data-field="alone" data-value="false">도움을 받아 들어갔어요</button>
+						</div>
+					</div>
+
+
+					<div class="review-modal-section">
+						<div class="review-modal-section-title">입구에 턱이 있었나요?</div>
+						<div class="review-choice-group">
+							<button type="button" class="review-choice" data-field="curb" data-value="true">있어요</button>
+							<button type="button" class="review-choice" data-field="curb" data-value="false">없어요</button>
+						</div>
+					</div>
+
+					<div class="review-modal-section" id="reviewSectionRamp" style="display:none;">
+						<div class="review-modal-section-title">입구에 경사로가 있었나요?</div>
+						<div class="review-choice-group">
+							<button type="button" class="review-choice" data-field="ramp" data-value="true">있어요</button>
+							<button type="button" class="review-choice" data-field="ramp" data-value="false">없어요</button>
+						</div>
+					</div>
+
+
+					<div class="review-modal-section">
+						<div class="review-modal-section-title">실내 이동은 어땠나요?</div>
+						<div class="review-choice-group">
+							<button type="button" class="review-choice" data-field="comfort" data-value="true">편해요</button>
+							<button type="button" class="review-choice" data-field="comfort" data-value="false">불편해요</button>
+						</div>
+					</div>
+
+					<div class="review-modal-section">
+						<div class="review-modal-section-title">사진 업로드</div>
+						<input type="file" id="reviewPhotos" class="review-file-input" multiple>
+						<div style="font-size:12px; color:#9ca3af; margin-top:4px;">
+							※ 현재는 사진은 업로드만 되고, JSON 저장에는 포함되지 않습니다.
+						</div>
+					</div>
+
+					<div class="review-modal-section">
+						<div class="review-modal-section-title">리뷰 내용</div>
+						<textarea id="reviewText" class="review-textarea"
+							placeholder="입구, 화장실, 실내 이동 편의 등을 자유롭게 적어주세요."></textarea>
+					</div>
+
+					<div class="review-modal-actions">
+						<button type="button" class="review-btn-secondary" id="reviewCancelBtn">취소</button>
+						<button type="submit" class="review-btn-primary" id="reviewSubmitBtn">저장하기</button>
+					</div>
+				</form>
+			</div>
+		</div>
+	</div>
+
 
 	// 서버 시작 전 api 키 및 설정 확인하기!
 	<script type="text/javascript" src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=01785b9a288ab46417b78a3790ac85c5&libraries=services"></script>

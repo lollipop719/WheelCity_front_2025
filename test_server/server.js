@@ -16,6 +16,7 @@ const PORT = process.env.PORT || 3000;
 
 /** 데모용 In-Memory DB (실서비스면 DB 사용) */
 const users = new Map(); // email -> { email, name, passwordHash, provider, kakaoId? }
+const reviews = [];      // 간단한 리뷰 저장소
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -60,6 +61,30 @@ app.post('/api/login', async (req, res) => {
 app.post('/api/logout', (req, res) => {
   req.session = null;
   res.json({ ok: true });
+});
+
+// ===== 리뷰 저장 API =====
+app.post('/api/reviews', (req, res) => {
+  const body = req.body || {};
+
+  const review = {
+    _id: body._id || `dummy_review_${Date.now()}`,
+    shop_id: body.shop_id || 'dummy_shop_id',
+    user_id: body.user_id || (req.session.user && req.session.user.email) || 'dummy_user_id',
+    enter: !!body.enter,       // could enter or not
+    alone: !!body.alone,       // entered alone or needed help
+    comfort: !!body.comfort,   // moving inside was comfortable
+    curb: !!body.curb,         // entrance curb exists
+    ramp: !!body.ramp,         // entrance ramp exists
+    photo_urls: Array.isArray(body.photo_urls) ? body.photo_urls : [],
+    review_text: body.review_text || '',
+    created_at: new Date().toISOString(),
+  };
+
+  reviews.push(review);
+  console.log('New review saved:', review);
+
+  res.json({ ok: true, review });
 });
 
 // ===== Kakao OAuth Callback =====
@@ -110,6 +135,7 @@ app.get('/auth/kakao/callback', async (req, res) => {
   }
 });
 
+/* 버그 해결될때까지만 주석 처리
 // ===== 크롤링 API =====
 // 장소 정보 크롤링 (선택적 기능 - puppeteer 설치 시 사용 가능)
 let crawlApi = null;
@@ -155,7 +181,7 @@ app.post('/api/crawl/places', async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 });
-
+*/
 // 정적 파일
 app.use(express.static(path.join(__dirname, 'public')));
 

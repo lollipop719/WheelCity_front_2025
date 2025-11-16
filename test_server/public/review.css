@@ -1,0 +1,177 @@
+/* ===== 리뷰 탭 & 리뷰 작성 모달 ===== */
+
+.review-header {
+  padding: 12px 20px 0 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  color: #999;
+}
+
+.review-title {
+  color: #999;
+}
+
+.review-write-btn {
+  border: none;
+  border-radius: 999px;
+  padding: 6px 12px;
+  background: #111827;
+  color: #fff;
+  font-size: 13px;
+  cursor: pointer;
+}
+.review-write-btn:hover {
+  background: #000;
+}
+
+.review-empty-text {
+  padding: 16px 20px 20px 20px;
+  text-align: left;
+  color: #b3b3b3;
+  font-size: 13px;
+}
+
+/* 모달 배경 */
+.review-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  display: none;
+  background: rgba(0,0,0,.25);
+  align-items: center;
+  justify-content: center;
+}
+
+.review-modal-body {
+  max-height: calc(80vh - 56px);
+  overflow-y: auto;
+  padding-right: 0;              /* ✅ 스크롤바가 카드 테두리와 더 가깝게 */
+  box-sizing: border-box;
+}
+
+/* 모달 카드 */
+.review-modal-sheet {
+  width: 420px;
+  max-width: calc(100% - 40px);
+  max-height: 80vh;
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 20px 60px rgba(0,0,0,.25);
+  font-family: 'Inter', sans-serif;
+  padding: 16px 20px 20px 20px;
+  box-sizing: border-box;
+  overflow: hidden;   /* ✅ 카드 경계에서 스크롤바 안 보이게 */
+}
+
+
+.review-modal-header {
+  position: relative;                /* ✅ 닫기 버튼을 오른쪽 위 모서리에 고정하기 위해 추가 */
+  display: flex;
+  justify-content: flex-start;       /* 타이틀은 왼쪽, X는 absolute로 별도 배치 */
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.review-modal-header h3 {
+  margin: 0;
+  font-size: 18px;
+}
+
+.review-modal-close {
+  position: absolute;                /* ✅ 카드 오른쪽 위 모서리에 딱 붙게 */
+  top: 0;
+  right: 0;
+  cursor: pointer;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #666;
+  font-size: 20px;
+  line-height: 1;
+}
+
+.review-modal-section {
+  margin-bottom: 12px;
+}
+.review-modal-section-title {
+  font-size: 14px;
+  font-weight: 500;
+  margin-bottom: 6px;
+}
+
+.review-choice-group {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.review-choice {
+  border-radius: 999px;
+  border: 1px solid #e5e7eb;
+  padding: 6px 10px;
+  font-size: 13px;
+  cursor: pointer;
+  background: #fff;
+}
+.review-choice.selected {
+  background: #111827;
+  color: #fff;
+  border-color: #111827;
+}
+
+.review-file-input {
+  margin-top: 4px;
+  font-size: 13px;
+}
+
+.review-textarea {
+  width: 100%;
+  min-height: 80px;
+  resize: vertical;
+  border-radius: 10px;
+  border: 1px solid #e5e7eb;
+  padding: 10px;
+  font-size: 13px;
+  box-sizing: border-box;
+}
+
+.review-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.review-btn-secondary {
+  border-radius: 10px;
+  border: 1px solid #e5e7eb;
+  background: #f9fafb;
+  padding: 8px 14px;
+  font-size: 13px;
+  cursor: pointer;
+}
+.review-btn-primary {
+  border-radius: 10px;
+  border: none;
+  background: #111827;
+  color: #fff;
+  padding: 8px 14px;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+#tab-review {
+  border-radius: 0 0 16px 16px !important;
+  overflow: hidden;
+}
+
+@media (max-width: 768px) {
+  .review-modal-sheet {
+    max-height: 90vh;
+  }
+}
