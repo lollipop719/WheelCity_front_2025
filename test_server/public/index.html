@@ -67,6 +67,7 @@
 		left: 52px;
 		top: 114px;
 		width: 383px;
+		max-height: 792px;
 		background: #ffffff;
 		border: 1px solid #FEE500;
 		border-radius: 10px;
@@ -74,13 +75,22 @@
 		z-index: 11;
 		box-sizing: border-box;
 		padding: 20px;
-		display: none;
+		overflow-x: hidden;
+		display: flex;
+		flex-direction: column;
+	}
+	
+	.place-detail[style*="display: block"],
+	.place-detail[style*="display: flex"] {
+		display: flex !important;
+		flex-direction: column;
 	}
 	.place-detail-header {
 		display: flex;
 		justify-content: space-between;
 		align-items: flex-start;
 		margin-bottom: 8px;
+		flex-shrink: 0;
 	}
 	.place-detail-title {
 		font-family: 'Inter', sans-serif;
@@ -126,6 +136,7 @@
 		font-family: 'Inter', sans-serif;
 		font-size: 14px;
 		border: 1px solid #e5e5e5;
+		flex-shrink: 0;
 	}
 	.place-detail-accessibility {
 		margin-top: 16px;
@@ -136,6 +147,7 @@
 		font-family: 'Inter', sans-serif;
 		font-size: 14px;
 		color: #666;
+		flex-shrink: 0;
 	}
 	.place-detail-accessibility img {
 		width: 20px;
@@ -166,6 +178,7 @@
 		margin-right: -20px;
 		padding-left: 20px;
 		padding-right: 20px;
+		flex-shrink: 0;
 	}
 	.place-detail-tab {
 		font-family: 'Inter', sans-serif;
@@ -185,6 +198,10 @@
 	}
 	.place-detail-content {
 		margin-top: 12px;
+		flex: 1;
+		overflow-y: auto;
+		overflow-x: hidden;
+		min-height: 0;
 	}
 	.tab-content {
 		display: none;
@@ -431,14 +448,35 @@
 		.result-details {
 			flex: 1;
 		}
-		.accessibility-tag {
-			display: inline-block;
-			padding: 2px 8px;
-			background: #f0f0f0;
-			border-radius: 4px;
-			font-size: 11px;
-			margin-right: 4px;
-		}
+	.accessibility-tag {
+		display: inline-block;
+		padding: 2px 8px;
+		background: #f0f0f0;
+		border-radius: 4px;
+		font-size: 11px;
+		margin-right: 4px;
+	}
+
+	/* 블로그 리뷰 스타일 */
+	.blog-review-item {
+		transition: background 0.2s;
+	}
+	
+	.blog-review-item:hover {
+		background: #f9f9f9;
+		margin: 0 -20px;
+		padding: 12px 20px !important;
+		border-radius: 8px;
+	}
+	
+	.blog-review-item:first-child {
+		padding-top: 0 !important;
+	}
+	
+	.blog-review-item:last-child {
+		border-bottom: none;
+		padding-bottom: 0 !important;
+	}
 
 
 		/* === 모바일 전용 레이아웃 조정 (추가) === */
@@ -468,12 +506,12 @@
 				height: calc(100vh - 140px);          /* 화면 높이에 맞춰 스크롤 */
 			}
 
-			/* 상세 카드도 화면 안에 들어오도록 */
-			.place-detail {
-				top: 120px;
-				max-height: calc(100vh - 140px);
-				overflow-y: auto;
-			}
+		/* 상세 카드도 화면 안에 들어오도록 */
+		.place-detail {
+			top: 120px;
+			max-height: calc(100vh - 140px);
+			display: flex;
+		}
 		}
 		/* === 모바일 전용 레이아웃 조정 (추가) === */
 
@@ -488,7 +526,7 @@
 			</svg>
 		</div>
 	</div>
-	<div class="place-detail" id="placeDetail">
+	<div class="place-detail" id="placeDetail" style="display: none;">
 		<div class="place-detail-header">
 			<div style="flex: 1;">
 				<h2 class="place-detail-title">

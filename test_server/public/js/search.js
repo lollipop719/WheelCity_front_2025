@@ -15,11 +15,18 @@ function searchPlaces(keyword, category) {
 		console.log('검색 상태:', status);
 		console.log('검색 데이터:', data);
 		
+		// 각 장소의 ID 출력
+		data.forEach((place, idx) => {
+			console.log(`${idx + 1}. ${place.place_name} - ID: ${place.id}`);
+		});
+		
 		if (status === kakao.maps.services.Status.OK) {
 			console.log('검색 성공! 결과 수:', data.length);
 			
-			// 크롤링 API로 추가 정보 가져오기
+			// 크롤링 API로 추가 정보 가져오기 (영업시간, 전화번호 등)
+			console.log('🕐 기본 정보 크롤링 시작 (영업시간, 전화번호)...');
 			enrichPlacesData(data).then(enrichedData => {
+				console.log('✅ 기본 정보 크롤링 완료');
 				displayResults(enrichedData);
 				displayMarkers(enrichedData);
 			});

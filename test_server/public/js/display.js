@@ -302,16 +302,136 @@ function displayResults(data) {
 	});
 }
 
+// 블로그 리뷰 가져오기 및 표시 (특정 매장 선택 시 자동 실행)
+async function loadBlogReviews(placeId) {
+	const blogContainer = document.getElementById('tab-blog');
+	
+	// 이미 크롤링된 경우 중복 실행 방지
+	if (blogContainer.dataset.loaded === placeId) {
+		console.log('ℹ️ 이미 로드된 블로그 리뷰 (중복 크롤링 방지)');
+		return;
+	}
+	
+	console.log('📝 블로그 리뷰 크롤링 시작 - Place ID:', placeId);
+	console.log('ℹ️ 이 크롤링은 매장 선택 시 자동으로 실행됩니다.');
+	
+	blogContainer.innerHTML = '<div style="padding: 20px; text-align: center; color: #999;">블로그 리뷰를 불러오는 중...</div>';
+	
+	try {
+		// 상대 경로 사용 (현재 페이지와 같은 호스트:포트로 요청)
+		const response = await fetch('/api/crawl/blog-reviews', {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json'
+			},
+			body: JSON.stringify({ placeId })
+		});
+		
+		if (!response.ok) {
+			throw new Error('블로그 리뷰를 불러올 수 없습니다.');
+		}
+		
+		const result = await response.json();
+		console.log('✅ 블로그 리뷰 크롤링 완료 - 발견된 리뷰 수:', result.reviews?.length || 0);
+		
+		// 블로그 리뷰 표시
+		displayBlogReviews(result.reviews || []);
+		
+		// 로드 완료 표시 (중복 크롤링 방지)
+		blogContainer.dataset.loaded = placeId;
+		
+	} catch (error) {
+		console.error('❌ 블로그 리뷰 로딩 실패:', error);
+		blogContainer.innerHTML = '<div style="padding: 20px; text-align: center; color: #f44;">블로그 리뷰를 불러오는데 실패했습니다.</div>';
+	}
+}
+
+// 블로그 리뷰를 화면에 표시
+function displayBlogReviews(reviews) {
+	const blogContainer = document.getElementById('tab-blog');
+	
+	if (!reviews || reviews.length === 0) {
+		blogContainer.innerHTML = '<div style="padding: 20px; text-align: center; color: #999;">등록된 블로그 리뷰가 없습니다.</div>';
+		return;
+	}
+	
+	let html = '<div style="display: flex; flex-direction: column;">';
+	
+	reviews.forEach((review, index) => {
+		html += `
+			<a href="${review.link}" target="_blank" rel="noopener noreferrer" style="text-decoration: none; color: inherit; display: block;">
+				<div class="blog-review-item" style="padding: 12px 0; border-bottom: 1px solid #f0f0f0;">
+					<!-- 제목 -->
+					${review.title ? `
+						<h4 style="margin: 0 0 8px 0; font-size: 14px; font-weight: 600; color: #333; line-height: 1.4;">
+							${review.title}
+						</h4>
+					` : ''}
+					
+					<!-- 본문 -->
+					${review.content ? `
+						<p style="margin: 0 0 8px 0; font-size: 13px; color: #666; line-height: 1.4; 
+								  overflow: hidden; text-overflow: ellipsis; display: -webkit-box; 
+								  -webkit-line-clamp: 2; -webkit-box-orient: vertical;">
+							${review.content}
+						</p>
+					` : ''}
+					
+					<!-- 사진 -->
+					${review.thumbnail ? `
+						<div style="margin-bottom: 8px;">
+							<img src="${review.thumbnail}" 
+								 alt="블로그 사진" 
+								 style="width: 100%; max-height: 200px; object-fit: cover; border-radius: 8px;"
+								 onerror="this.style.display='none'">
+						</div>
+					` : ''}
+					
+					<!-- 블로그명과 날짜 -->
+					<div style="display: flex; align-items: center; gap: 6px; font-size: 11px; color: #999;">
+						${review.blogName ? `<span>${review.blogName}</span>` : ''}
+						${review.date ? `<span>·</span><span>${review.date}</span>` : ''}
+					</div>
+				</div>
+			</a>
+		`;
+	});
+	
+	html += '</div>';
+	blogContainer.innerHTML = html;
+}
+
 // 매장 상세 정보 표시
 function showPlaceDetail(place, selectedMarker) {
 	// 검색창 비우기
 	document.getElementById('searchInput').value = '';
 	
+	// 탭을 홈으로 초기화
+	document.querySelectorAll('.place-detail-tab').forEach(t => {
+		t.classList.remove('active');
+	});
+	document.querySelector('.place-detail-tab[data-tab="home"]').classList.add('active');
+	document.querySelectorAll('.tab-content').forEach(content => {
+		content.classList.remove('active');
+	});
+	document.getElementById('tab-home').classList.add('active');
+	
 	// 디버깅: 전체 카테고리 정보 출력
 	console.log('=== 매장 정보 ===');
 	console.log('매장명:', place.place_name);
+	console.log('매장 ID:', place.id);
 	console.log('전체 카테고리:', place.category_name);
 	console.log('주소:', place.address_name);
+	
+	// 현재 선택된 장소 정보를 전역 변수에 저장 (블로그 탭에서 사용)
+	window.currentPlace = place;
+	
+	// 블로그 탭 초기화 (다른 매장 선택 시 이전 데이터 제거)
+	const blogContainer = document.getElementById('tab-blog');
+	if (blogContainer) {
+		blogContainer.innerHTML = '<div style="padding: 20px; text-align: center; color: #999;">블로그 정보 준비중</div>';
+		delete blogContainer.dataset.loaded;
+	}
 	
 	// 매장명
 	document.getElementById('placeTitle').textContent = place.place_name;
@@ -413,6 +533,12 @@ function showPlaceDetail(place, selectedMarker) {
 	// 검색 결과 패널 숨기고 상세 정보 표시
 	document.getElementById('searchResults').style.display = 'none';
 	document.getElementById('placeDetail').style.display = 'block';
+	
+	// 🔄 매장 선택 시 자동으로 블로그 리뷰 크롤링 시작
+	if (place.id) {
+		console.log('🔄 매장 선택됨 - 블로그 리뷰 크롤링 자동 시작');
+		loadBlogReviews(place.id);
+	}
 }
 
 

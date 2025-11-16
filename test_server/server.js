@@ -182,6 +182,37 @@ app.post('/api/crawl/places', async (req, res) => {
   }
 });
 */
+
+// ===== 블로그 리뷰 크롤링 API =====
+let blogCrawlApi = null;
+try {
+  blogCrawlApi = require('./crawl_blog_reviews');
+  console.log('✅ 블로그 리뷰 크롤링 API 로드됨');
+} catch (e) {
+  console.log('⚠️ 블로그 리뷰 크롤링 API 사용 불가 (puppeteer 미설치)');
+}
+
+app.post('/api/crawl/blog-reviews', async (req, res) => {
+  if (!blogCrawlApi) {
+    return res.status(503).json({ error: 'Blog review crawling service not available' });
+  }
+  
+  const { placeId } = req.body;
+  if (!placeId) {
+    return res.status(400).json({ error: 'placeId is required' });
+  }
+  
+  console.log(`📝 블로그 리뷰 크롤링 요청 - Place ID: ${placeId}`);
+  
+  try {
+    const result = await blogCrawlApi.crawlBlogReviews(placeId);
+    console.log(`✅ 블로그 리뷰 크롤링 완료 - ${result.count}개 발견`);
+    res.json(result);
+  } catch (error) {
+    console.error(`❌ 블로그 리뷰 크롤링 실패 - Place ID: ${placeId}`, error.message);
+    res.status(500).json({ error: error.message });
+  }
+});
 // 정적 파일
 app.use(express.static(path.join(__dirname, 'public')));
 

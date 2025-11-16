@@ -104,6 +104,11 @@ document.querySelectorAll('.place-detail-tab').forEach(tab => {
 		}
 		
 		console.log('탭 선택:', tabName);
+		
+		// 블로그 탭 선택 시 - 이미 매장 선택 시 자동으로 크롤링되므로 여기서는 처리하지 않음
+		if (tabName === 'blog') {
+			console.log('ℹ️ 블로그 탭 선택됨 (크롤링은 매장 선택 시 자동 실행됨)');
+		}
 	});
 });
 
