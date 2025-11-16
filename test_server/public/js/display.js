@@ -358,39 +358,51 @@ function displayBlogReviews(reviews) {
 	let html = '<div style="display: flex; flex-direction: column;">';
 	
 	reviews.forEach((review, index) => {
+		// 본문에서 중복된 제목 제거 (블로그명 + 제목이 본문에 포함된 경우)
+		let cleanContent = review.content || '';
+		if (review.title && cleanContent.includes(review.title)) {
+			cleanContent = cleanContent.replace(review.title, '').trim();
+		}
+		if (review.blogName && cleanContent.startsWith(review.blogName)) {
+			cleanContent = cleanContent.replace(review.blogName, '').trim();
+		}
+		// 남은 구분자 제거
+		cleanContent = cleanContent.replace(/^[\s:·\-|]+/, '').trim();
+		
 		html += `
 			<a href="${review.link}" target="_blank" rel="noopener noreferrer" style="text-decoration: none; color: inherit; display: block;">
-				<div class="blog-review-item" style="padding: 12px 0; border-bottom: 1px solid #f0f0f0;">
-					<!-- 제목 -->
-					${review.title ? `
-						<h4 style="margin: 0 0 8px 0; font-size: 14px; font-weight: 600; color: #333; line-height: 1.4;">
-							${review.title}
-						</h4>
-					` : ''}
-					
-					<!-- 본문 -->
-					${review.content ? `
-						<p style="margin: 0 0 8px 0; font-size: 13px; color: #666; line-height: 1.4; 
-								  overflow: hidden; text-overflow: ellipsis; display: -webkit-box; 
-								  -webkit-line-clamp: 2; -webkit-box-orient: vertical;">
-							${review.content}
-						</p>
-					` : ''}
-					
-					<!-- 사진 -->
+				<div class="blog-review-item" style="padding: 12px 0; border-bottom: 1px solid #f0f0f0; display: flex; gap: 12px;">
+					<!-- 썸네일 (있으면 왼쪽에 작은 정사각형으로) -->
 					${review.thumbnail ? `
-						<div style="margin-bottom: 8px;">
-							<img src="${review.thumbnail}" 
-								 alt="블로그 사진" 
-								 style="width: 100%; max-height: 200px; object-fit: cover; border-radius: 8px;"
-								 onerror="this.style.display='none'">
-						</div>
+						<img src="${review.thumbnail}" 
+							 alt="블로그 사진" 
+							 style="width: 80px; height: 80px; object-fit: cover; border-radius: 8px; flex-shrink: 0;"
+							 onerror="this.style.display='none'">
 					` : ''}
 					
-					<!-- 블로그명과 날짜 -->
-					<div style="display: flex; align-items: center; gap: 6px; font-size: 11px; color: #999;">
-						${review.blogName ? `<span>${review.blogName}</span>` : ''}
-						${review.date ? `<span>·</span><span>${review.date}</span>` : ''}
+					<!-- 텍스트 영역 -->
+					<div style="flex: 1; min-width: 0;">
+						<!-- 제목 (16px로 증가) -->
+						${review.title ? `
+							<h4 style="margin: 0 0 6px 0; font-size: 16px; font-weight: 600; color: #333; line-height: 1.4;">
+								${review.title}
+							</h4>
+						` : ''}
+						
+						<!-- 본문 (중복 제거된) -->
+						${cleanContent ? `
+							<p style="margin: 0 0 6px 0; font-size: 13px; color: #666; line-height: 1.4; 
+									  overflow: hidden; text-overflow: ellipsis; display: -webkit-box; 
+									  -webkit-line-clamp: 2; -webkit-box-orient: vertical;">
+								${cleanContent}
+							</p>
+						` : ''}
+						
+						<!-- 블로그명과 날짜 -->
+						<div style="display: flex; align-items: center; gap: 6px; font-size: 11px; color: #999;">
+							${review.blogName ? `<span>${review.blogName}</span>` : ''}
+							${review.date ? `<span>·</span><span>${review.date}</span>` : ''}
+						</div>
 					</div>
 				</div>
 			</a>
