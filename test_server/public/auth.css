@@ -391,6 +391,42 @@
   color: #6b7280;
 }
 
+/* 넘을 수 있는 최대 턱 높이 표시 */
+.mypage-maxheight-card {
+  margin: 14px 0;
+  padding: 12px 14px 14px 14px;
+  border-radius: 14px;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+}
+
+.mypage-maxheight-title {
+  font-size: 13px;
+  font-weight: 500;
+  color: #4b5563;
+  margin-bottom: 6px;
+}
+
+.mypage-maxheight-value {
+  font-size: 17px;
+  font-weight: 600;
+  color: #111827;
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+}
+
+.mypage-maxheight-value .unit {
+  font-size: 14px;
+  color: #6b7280;
+}
+
+.mypage-maxheight-desc {
+  margin-top: 4px;
+  font-size: 12px;
+  color: #4b5563;
+}
+
 /* 리뷰 리스트 */
 
 .mypage-section-title {
@@ -570,3 +606,123 @@
     max-width: 480px;
   }
 }
+
+/* ===== 회원 정보 수정 (최대 턱 높이 설정 모달) ===== */
+
+.height-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 75;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0,0,0,.25);
+}
+
+.height-sheet {
+  background: #ffffff;
+  border-radius: 18px;
+  box-shadow: 0 20px 60px rgba(0,0,0,.25);
+  width: 360px;
+  max-width: calc(100% - 40px);
+  padding: 18px 20px 20px;
+  box-sizing: border-box;
+  font-family: 'Inter', sans-serif;
+  transform: translateY(10px);
+  opacity: 0;
+  transition: transform .2s ease, opacity .2s ease;
+}
+
+.height-sheet.open {
+  transform: translateY(0);
+  opacity: 1;
+}
+
+.height-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.height-header h2 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.height-close {
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-size: 20px;
+  line-height: 1;
+  color: #6b7280;
+}
+
+.height-body {
+  font-size: 14px;
+}
+
+.height-label {
+  display: block;
+  font-weight: 500;
+  margin-bottom: 6px;
+}
+
+.height-sub {
+  font-size: 12px;
+  color: #6b7280;
+  margin-left: 4px;
+}
+
+.height-input-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+#maxHeightInput {
+  flex: 1;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid #e5e7eb;
+  font-size: 14px;
+
+  appearance: textfield;      /* ✅ 표준 속성 */
+  -moz-appearance: textfield; /* ✅ 파이어폭스용 */
+}
+
+#maxHeightInput::-webkit-outer-spin-button,
+#maxHeightInput::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.height-unit {
+  font-size: 14px;
+  color: #4b5563;
+}
+
+.height-hint {
+  font-size: 12px;
+  color: #9ca3af;
+  margin: 4px 0 12px;
+}
+
+.height-save {
+  width: 100%;
+  padding: 10px 0;
+  border-radius: 10px;
+  border: none;
+  background: #111827;
+  color: #ffffff;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.height-save:hover {
+  background: #000000;
+}
+/* 회원정보 수정 관련 디자인 끝 */
