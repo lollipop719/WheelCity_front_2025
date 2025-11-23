@@ -427,6 +427,88 @@
 .mypage-review-item:last-child {
   border-bottom: none;
 }
+.mypage-review-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+.mypage-review-shop-info {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+}
+.mypage-review-shop-image {
+  width: 24px;
+  height: 24px;
+  border-radius: 4px;
+  object-fit: cover;
+  border: 1px solid #e5e7eb;
+}
+.mypage-review-shop-name {
+  font-size: 12px;
+  font-weight: 500;
+  color: #111827;
+}
+.mypage-review-date {
+  font-size: 11px;
+  color: #9ca3af;
+}
+.mypage-review-text {
+  margin-top: 6px;
+  margin-bottom: 8px;
+  color: #374151;
+  line-height: 1.5;
+}
+.mypage-review-photos {
+  display: flex;
+  gap: 6px;
+  margin-top: 8px;
+  margin-bottom: 8px;
+  flex-wrap: wrap;
+}
+.mypage-review-photo {
+  width: 60px;
+  height: 60px;
+  object-fit: cover;
+  border-radius: 6px;
+  border: 1px solid #e5e7eb;
+}
+.mypage-review-features {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 8px;
+}
+.mypage-review-tag {
+  display: inline-block;
+  padding: 2px 8px;
+  background: #f3f4f6;
+  border-radius: 4px;
+  font-size: 11px;
+  color: #6b7280;
+}
+
+.mypage-review-tag.mypage-review-tag-good {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.mypage-review-tag.mypage-review-tag-bad {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.mypage-review-tag.mypage-review-tag-warning {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.mypage-review-tag.mypage-review-tag-neutral {
+  background: #f3f4f6;
+  color: #6b7280;
+}
 .mypage-review-place {
   font-weight: 500;
   color: #111827;

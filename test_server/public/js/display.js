@@ -457,7 +457,7 @@ function displayResults(data) {
 // 	
 // 	try {
 // 		// 상대 경로 사용 (현재 페이지와 같은 호스트:포트로 요청)
-// 		const response = await fetch('/api/crawl/blog-reviews', {
+// 		const response = await fetch('/crawl/blog-reviews', {
 // 			method: 'POST',
 // 			headers: {
 // 				'Content-Type': 'application/json'
@@ -815,6 +815,14 @@ function showPlaceDetail(place, selectedMarker) {
 	// 	console.log('🔄 매장 선택됨 - 블로그 리뷰 크롤링 자동 시작');
 	// 	loadBlogReviews(place.id);
 	// }
+	
+	// 리뷰 탭이 이미 활성화되어 있으면 리뷰 로드
+	const reviewTab = document.querySelector('.place-detail-tab[data-tab="review"]');
+	if (reviewTab && reviewTab.classList.contains('active') && typeof loadShopReviews === 'function') {
+		setTimeout(() => {
+			loadShopReviews(place);
+		}, 100); // Small delay to ensure DOM is ready
+	}
 }
 
 // 웹사이트 정보 가져오기 및 표시 (특정 매장 선택 시 자동 실행)
@@ -822,7 +830,7 @@ async function loadWebsiteInfo(placeId, place) {
 	console.log('[웹사이트] 크롤링 시작 - Place ID:', placeId);
 	
 	try {
-		const response = await fetch('/api/crawl/website', {
+		const response = await fetch('/crawl/website', {
 			method: 'POST',
 			headers: {
 				'Content-Type': 'application/json'

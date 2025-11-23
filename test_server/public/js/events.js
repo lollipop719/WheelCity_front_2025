@@ -105,6 +105,11 @@ document.querySelectorAll('.place-detail-tab').forEach(tab => {
 		
 		console.log('탭 선택:', tabName);
 		
+		// 리뷰 탭 선택 시 - 매장 리뷰 로드
+		if (tabName === 'review' && window.currentPlace) {
+			loadShopReviews(window.currentPlace);
+		}
+		
 		// 블로그 탭 선택 시 - 이미 매장 선택 시 자동으로 크롤링되므로 여기서는 처리하지 않음
 		// if (tabName === 'blog') {
 		// 	console.log('ℹ️ 블로그 탭 선택됨 (크롤링은 매장 선택 시 자동 실행됨)');
@@ -144,7 +149,7 @@ function closeReviewModal() {
 // 모달 열기 버튼 - 로그인 확인
 async function checkLoginAndOpenReviewModal() {
 	try {
-		const res = await fetch('/api/me');
+		const res = await fetch('/session/me');
 		const data = await res.json();
 		const user = data.user;
 		
@@ -255,7 +260,7 @@ if (reviewForm) {
 		try {
 			// Step 0: Check login and get user info
 			console.log('로그인 상태 확인 중...');
-			const userRes = await fetch('/api/me');
+			const userRes = await fetch('/session/me');
 			const userData = await userRes.json();
 			const user = userData.user;
 			
@@ -289,14 +294,18 @@ if (reviewForm) {
 			}
 
 			// Step 2: Get or create shop
-			console.log('매장 정보 가져오는 중...');
+			console.log('[REVIEW] 매장 정보 가져오는 중...');
+			console.log('[REVIEW] Current place:', window.currentPlace);
 			const shop = await window.ReviewAPI.getOrCreateShop(window.currentPlace);
+			console.log('[REVIEW] Shop response:', shop);
+			
 			const shopId = shop._id || shop.id;
 			
 			if (!shopId) {
-				throw new Error('매장 ID를 가져올 수 없습니다.');
+				console.error('[REVIEW ERROR] Shop object:', shop);
+				throw new Error('매장 ID를 가져올 수 없습니다. Shop response: ' + JSON.stringify(shop));
 			}
-			console.log('매장 ID:', shopId);
+			console.log('[REVIEW] 매장 ID:', shopId);
 
 			// Step 3: Get image files
 			const photoInput = document.getElementById('reviewPhotos');
@@ -320,6 +329,14 @@ if (reviewForm) {
 			const result = await window.ReviewService.submitReviewWithImages(shopId, reviewData, imageFiles);
 			
 			console.log('리뷰 저장 완료:', result);
+			
+			// Reload shop reviews if review tab is active
+			if (window.currentPlace) {
+				const reviewTab = document.querySelector('.place-detail-tab[data-tab="review"]');
+				if (reviewTab && reviewTab.classList.contains('active')) {
+					loadShopReviews(window.currentPlace);
+				}
+			}
 			
 			// Step 6: Get updated user info to show new review_score
 			try {
@@ -384,7 +401,7 @@ let currentPlaceReviews = [];
 // 사용자 정보 가져오기
 async function getCurrentUser() {
 	try {
-		const res = await fetch('/api/me');
+		const res = await fetch('/session/me');
 		const data = await res.json();
 		return data.user || null;
 	} catch (err) {
@@ -411,6 +428,40 @@ function renderReviews() {
 		const reviewText = review.review_text || '';
 		const photos = review.photo_urls || [];
 		
+		// Color coding for review features
+		const getFeatureClass = (value, type) => {
+			if (value === null || value === undefined) return '';
+			if (type === 'enter') {
+				return value ? 'review-feature-good' : 'review-feature-bad';
+			}
+			if (type === 'comfort') {
+				return value ? 'review-feature-good' : 'review-feature-bad';
+			}
+			if (type === 'alone') {
+				return value ? 'review-feature-good' : 'review-feature-warning';
+			}
+			return 'review-feature-neutral';
+		};
+		
+		// Features HTML with color coding
+		const features = [];
+		if (review.enter !== null) {
+			features.push(`<span class="review-feature-tag ${getFeatureClass(review.enter, 'enter')}">${review.enter ? '✓ 입장 가능' : '✗ 입장 불가'}</span>`);
+		}
+		if (review.alone !== null) {
+			features.push(`<span class="review-feature-tag ${getFeatureClass(review.alone, 'alone')}">${review.alone ? '✓ 혼자 가능' : '✗ 도움 필요'}</span>`);
+		}
+		if (review.comfort !== null) {
+			features.push(`<span class="review-feature-tag ${getFeatureClass(review.comfort, 'comfort')}">${review.comfort ? '✓ 편함' : '✗ 불편함'}</span>`);
+		}
+		if (review.ramp) {
+			features.push(`<span class="review-feature-tag review-feature-good">경사로</span>`);
+		}
+		if (review.curb) {
+			features.push(`<span class="review-feature-tag review-feature-warning">턱</span>`);
+		}
+		const featuresHtml = features.length > 0 ? `<div class="review-features">${features.join('')}</div>` : '';
+		
 		// 사진 HTML
 		const photosHtml = photos.length > 0 
 			? `<div class="review-item-photos">
@@ -425,52 +476,15 @@ function renderReviews() {
 				</div>
 				<div class="review-item-right">
 					<div class="review-user-name">${userName}</div>
+					${featuresHtml}
 					${photosHtml}
 					${reviewText ? `<div class="review-item-text">${reviewText}</div>` : ''}
-					<div class="review-item-actions">
-						<button class="review-action-btn" data-action="like" data-review-id="${review._id || index}">
-							<svg viewBox="0 0 24 24">
-								<path d="M7.493 18.75c-.425 0-.82-.236-.975-.632A7.48 7.48 0 016 15.375c0-1.75.599-3.358 1.602-4.634.151-.192.373-.309.6-.397.473-.183.89-.514 1.212-.924a9.042 9.042 0 012.861-2.4c.723-.384 1.35-.956 1.653-1.715a4.498 4.498 0 00.322-1.672V3a.75.75 0 01.75-.75 2.25 2.25 0 012.25 2.25c0 1.152-.26 2.243-.723 3.218-.266.558.107 1.282.725 1.282h3.126c1.026 0 1.945.694 2.054 1.715.045.422.068.85.068 1.285a11.95 11.95 0 01-2.649 7.521c-.388.482-.987.729-1.605.729H14.23c-.483 0-.964-.078-1.423-.23l-3.114-1.04a4.501 4.501 0 00-1.423-.23h-.777zM2.331 10.977a11.969 11.969 0 00-.831 4.398 12 12 0 00.52 3.507c.26.85 1.084 1.368 1.973 1.368H4.9c.445 0 .72-.498.523-.898a8.963 8.963 0 01-.924-3.977c0-1.708.476-3.305 1.302-4.666.245-.403-.028-.959-.5-.959H4.25c-.832 0-1.612.453-1.918 1.227z"/>
-							</svg>
-							<span class="review-action-count">0</span>
-						</button>
-						<button class="review-action-btn" data-action="dislike" data-review-id="${review._id || index}">
-							<svg viewBox="0 0 24 24" style="transform: rotate(180deg);">
-								<path d="M7.493 18.75c-.425 0-.82-.236-.975-.632A7.48 7.48 0 016 15.375c0-1.75.599-3.358 1.602-4.634.151-.192.373-.309.6-.397.473-.183.89-.514 1.212-.924a9.042 9.042 0 012.861-2.4c.723-.384 1.35-.956 1.653-1.715a4.498 4.498 0 00.322-1.672V3a.75.75 0 01.75-.75 2.25 2.25 0 012.25 2.25c0 1.152-.26 2.243-.723 3.218-.266.558.107 1.282.725 1.282h3.126c1.026 0 1.945.694 2.054 1.715.045.422.068.85.068 1.285a11.95 11.95 0 01-2.649 7.521c-.388.482-.987.729-1.605.729H14.23c-.483 0-.964-.078-1.423-.23l-3.114-1.04a4.501 4.501 0 00-1.423-.23h-.777zM2.331 10.977a11.969 11.969 0 00-.831 4.398 12 12 0 00.52 3.507c.26.85 1.084 1.368 1.973 1.368H4.9c.445 0 .72-.498.523-.898a8.963 8.963 0 01-.924-3.977c0-1.708.476-3.305 1.302-4.666.245-.403-.028-.959-.5-.959H4.25c-.832 0-1.612.453-1.918 1.227z"/>
-							</svg>
-							<span class="review-action-count">0</span>
-						</button>
-					</div>
 				</div>
 			</div>
 		`;
 	}).join('');
 
 	reviewListContainer.innerHTML = `<div class="review-list">${reviewsHtml}</div>`;
-
-	// 추천/비추천 버튼 이벤트 리스너 추가
-	document.querySelectorAll('.review-action-btn').forEach(btn => {
-		btn.addEventListener('click', function() {
-			const action = this.dataset.action;
-			const reviewId = this.dataset.reviewId;
-			
-			// 같은 리뷰의 다른 액션 버튼들
-			const reviewItem = this.closest('.review-item');
-			const allActionBtns = reviewItem.querySelectorAll('.review-action-btn');
-			
-			// 이미 활성화된 버튼을 다시 클릭하면 취소
-			if (this.classList.contains('active')) {
-				this.classList.remove('active');
-			} else {
-				// 다른 버튼 비활성화
-				allActionBtns.forEach(b => b.classList.remove('active'));
-				// 현재 버튼 활성화
-				this.classList.add('active');
-			}
-			
-			console.log(`리뷰 ${reviewId}에 ${action} 액션`);
-		});
-	});
 }
 
 // 리뷰 추가 (저장 후 호출)
@@ -488,4 +502,171 @@ async function addReview(review) {
 function clearReviews() {
 	currentPlaceReviews = [];
 	renderReviews();
+}
+
+// 매장 리뷰 로드 (백엔드에서 가져오기)
+async function loadShopReviews(place) {
+	if (!place || !window.ReviewAPI) {
+		console.error('장소 정보 또는 ReviewAPI가 없습니다.', { place, ReviewAPI: window.ReviewAPI });
+		return;
+	}
+
+	const reviewTitle = document.querySelector('.review-title');
+	if (reviewTitle) {
+		reviewTitle.textContent = '리뷰 불러오는 중...';
+	}
+
+	try {
+		console.log('매장 리뷰 로드 시작:', place.place_name);
+		
+		// Step 1: Get or create shop to get shop_id
+		const shop = await window.ReviewAPI.getOrCreateShop(place);
+		console.log('매장 정보:', shop);
+		
+		const shopId = shop._id || shop.id;
+
+		if (!shopId) {
+			throw new Error('매장 ID를 가져올 수 없습니다.');
+		}
+
+		console.log('매장 ID:', shopId);
+
+		// Step 2: Fetch reviews for this shop AND all shops with same name and coordinates
+		// This aggregates reviews from duplicate shops
+		let allReviews = [];
+		
+		// First, get reviews for the current shop
+		try {
+			const reviewsData = await window.ReviewAPI.getReviewsByShop(shopId);
+			console.log('리뷰 데이터 (current shop):', reviewsData);
+			allReviews = reviewsData.items || [];
+		} catch (err) {
+			console.error('Failed to get reviews for current shop:', err);
+		}
+		
+		// Then, find all shops with same name and get their reviews
+		try {
+			const placeName = place.place_name;
+			const lat = parseFloat(place.y);
+			const lng = parseFloat(place.x);
+			
+			// Search for all shops with same name
+			const searchResponse = await window.ReviewAPI.apiRequest(`/shops/search?text=${encodeURIComponent(placeName)}&limit=50`, {
+				method: 'GET',
+			});
+			// Backend returns {items: [...], count: ...}, extract items
+			const searchResults = Array.isArray(searchResponse) ? searchResponse : (searchResponse.items || []);
+			
+			if (Array.isArray(searchResults) && searchResults.length > 0) {
+				console.log('[REVIEWS] Found', searchResults.length, 'shops with same name, aggregating reviews...');
+				
+				// Get reviews from all matching shops
+				const reviewPromises = searchResults.map(async (matchingShop) => {
+					const matchingShopId = matchingShop._id || matchingShop.id;
+					if (!matchingShopId || String(matchingShopId) === String(shopId)) {
+						return []; // Skip current shop (already fetched)
+					}
+					
+					try {
+						// Check if coordinates are close (within 100m)
+						if (matchingShop.location && matchingShop.location.coordinates) {
+							const shopLng = matchingShop.location.coordinates[0];
+							const shopLat = matchingShop.location.coordinates[1];
+							const distance = window.ReviewAPI.calculateDistance(lat, lng, shopLat, shopLng);
+							
+							if (distance < 100) { // Within 100 meters
+								const matchingReviews = await window.ReviewAPI.getReviewsByShop(matchingShopId);
+								console.log('[REVIEWS] Found', (matchingReviews.items || []).length, 'reviews from shop:', matchingShop.name, 'ID:', matchingShopId);
+								return matchingReviews.items || [];
+							}
+						} else {
+							// If no coordinates but name matches, still get reviews
+							const matchingReviews = await window.ReviewAPI.getReviewsByShop(matchingShopId);
+							console.log('[REVIEWS] Found', (matchingReviews.items || []).length, 'reviews from shop (no coords):', matchingShop.name);
+							return matchingReviews.items || [];
+						}
+					} catch (err) {
+						console.warn('[REVIEWS] Failed to get reviews from shop', matchingShop.name, ':', err);
+					}
+					return [];
+				});
+				
+				const additionalReviews = await Promise.all(reviewPromises);
+				// Flatten and add to allReviews
+				additionalReviews.forEach(reviews => {
+					allReviews = allReviews.concat(reviews);
+				});
+				
+				console.log('[REVIEWS] Total reviews aggregated:', allReviews.length);
+			}
+		} catch (err) {
+			console.warn('[REVIEWS] Failed to aggregate reviews from matching shops:', err);
+		}
+		
+		// Remove duplicates based on review ID
+		const uniqueReviews = [];
+		const seenIds = new Set();
+		for (const review of allReviews) {
+			const reviewId = review._id || review.id;
+			if (reviewId && !seenIds.has(String(reviewId))) {
+				seenIds.add(String(reviewId));
+				uniqueReviews.push(review);
+			}
+		}
+		
+		// Sort by created_at (newest first)
+		uniqueReviews.sort((a, b) => {
+			const dateA = a.created_at ? new Date(a.created_at).getTime() : 0;
+			const dateB = b.created_at ? new Date(b.created_at).getTime() : 0;
+			return dateB - dateA;
+		});
+		
+		const reviews = uniqueReviews;
+
+		// Step 3: Update currentPlaceReviews and render
+		currentPlaceReviews = reviews.map(review => ({
+			...review,
+			user_name: '익명' // Backend doesn't return user_name, using anonymous for now
+		}));
+
+		renderReviews();
+
+		// Update review title with count
+		if (reviewTitle) {
+			const count = reviews.length;
+			reviewTitle.textContent = count > 0 ? `리뷰 ${count}개` : '리뷰';
+		}
+
+		console.log(`매장 리뷰 ${reviews.length}개 로드 완료`);
+	} catch (error) {
+		console.error('[REVIEW ERROR] 매장 리뷰 로드 실패:', error);
+		console.error('[REVIEW ERROR] 에러 상세:', {
+			message: error.message,
+			stack: error.stack,
+			name: error.name
+		});
+		
+		// Show more specific error message
+		let errorMsg = '리뷰를 불러오는데 실패했습니다.';
+		if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
+			errorMsg = '백엔드 서버에 연결할 수 없습니다. 서버가 실행 중인지 확인해주세요.';
+		} else if (error.message.includes('404')) {
+			errorMsg = '매장을 찾을 수 없습니다.';
+		} else if (error.message.includes('401') || error.message.includes('Unauthorized')) {
+			errorMsg = '인증 오류가 발생했습니다. API 키를 확인해주세요.';
+		} else if (error.message) {
+			errorMsg = `오류: ${error.message}`;
+		}
+		
+		if (reviewTitle) {
+			reviewTitle.textContent = '리뷰';
+		}
+		if (reviewEmptyText) {
+			reviewEmptyText.textContent = errorMsg;
+			reviewEmptyText.style.display = 'block';
+		}
+		if (reviewListContainer) {
+			reviewListContainer.innerHTML = '';
+		}
+	}
 }
