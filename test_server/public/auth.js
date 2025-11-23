@@ -300,6 +300,12 @@ const KAKAO_REDIRECT_URI = 'https://wheelcity.sbserver.store/auth/kakao/callback
     // 점수 업데이트
     updateMypageScore(scoreM);
 
+    // 최대 턱 높이 값 UI 업데이트
+    const maxHeightEl = document.getElementById('mypageMaxHeightCm');
+    if (maxHeightEl) {
+      maxHeightEl.textContent = maxHeight;
+    }
+
     // 사용자 리뷰 가져오기
     try {
       if (kakaoId && window.ReviewAPI && window.ReviewAPI.getOrCreateUserByKakao) {
@@ -461,14 +467,50 @@ const KAKAO_REDIRECT_URI = 'https://wheelcity.sbserver.store/auth/kakao/callback
   });
 
   // ===== 최대 턱 높이 설정 모달 열고/닫기 =====
-  function openHeightModal() {
-    // 나중에 백엔드에서 기존 값을 가져와서 세팅하고 싶으면 여기서 fetch 추가하면 됨.
-    // 지금은 저장 버튼을 누르기 전까지는 백엔드로 아무것도 보내지 않음.
-    heightBackdrop.style.display = 'flex';
-    requestAnimationFrame(() => {
-      heightSheet.classList.add('open');
-    });
+  async function openHeightModal() {
+    try {
+      // 1) 세션에서 현재 로그인 유저 가져오기
+      const meRes = await fetch('/session/me');
+      const meData = await meRes.json();
+      const sessionUser = meData.user;
+
+      if (!sessionUser) {
+        alert('로그인이 필요합니다.');
+        return;
+      }
+
+      // 2) Kakao ID 얻기
+      const kakaoId = sessionUser.kakaoId || sessionUser.kakao_id;
+      if (!kakaoId) {
+        alert('카카오 로그인 후 이용해 주세요.');
+        return;
+      }
+
+      // 3) 백엔드 user 보장 + 현재 max_height_cm 가져오기
+      let maxHeight = 0;
+      if (window.ReviewAPI && typeof window.ReviewAPI.getOrCreateUserByKakao === 'function') {
+        const userInfo = await window.ReviewAPI.getOrCreateUserByKakao(
+          kakaoId,
+          sessionUser.email,
+          sessionUser.name
+        );
+        maxHeight = userInfo.user?.max_height_cm ?? 0;
+      }
+
+      // 4) 인풋에 현재 값 세팅
+      maxHeightInput.value = String(maxHeight);
+
+      // 모달 표시
+      heightBackdrop.style.display = 'flex';
+      requestAnimationFrame(() => {
+        heightSheet.classList.add('open');
+      });
+    } catch (e) {
+      console.error('openHeightModal error:', e);
+      alert('회원 정보를 불러오지 못했습니다.');
+    }
   }
+
 
   function closeHeightModal() {
     heightSheet.classList.remove('open');
@@ -506,50 +548,55 @@ heightSaveBtn.addEventListener('click', async () => {
       return;
     }
 
-    // 2) Kakao ID 얻기 (리뷰 저장할 때 쓰는 것과 동일한 방식)
     const kakaoId = sessionUser.kakaoId || sessionUser.kakao_id;
     if (!kakaoId) {
       alert('카카오 로그인 후 이용해 주세요.');
       return;
     }
 
-    // 3) 백엔드 상의 user도 보장 (리뷰 쪽과 동일한 흐름)
-    if (window.ReviewAPI && typeof window.ReviewAPI.getOrCreateUserByKakao === 'function') {
-      await window.ReviewAPI.getOrCreateUserByKakao(
-        kakaoId,
-        sessionUser.email,
-        sessionUser.name
-      );
+    // 2) 백엔드에 user가 반드시 존재하도록 보장 + user_id 얻기
+    if (!window.ReviewAPI || typeof window.ReviewAPI.getOrCreateUserByKakao !== 'function') {
+      console.error('ReviewAPI.getOrCreateUserByKakao 가 없습니다.');
+      alert('사용자 정보를 불러올 수 없습니다.');
+      return;
     }
 
-    // 4) ReviewAPI가 사용하는 백엔드 base URL 재사용
-    //    (reviewAPI.js 안에 있는 상수 이름에 맞춰서 사용하세요)
-    //    예: const API_BASE = window.ReviewAPI.API_BASE || 'http://localhost:8000';
-    const API_BASE =
-      window.ReviewAPI && window.ReviewAPI.API_BASE
-        ? window.ReviewAPI.API_BASE
-        : 'http://wheelcity.sbserver.store/proxy/8000'; // 여기 아직 에러남. 해결해야함.
+    const userInfo = await window.ReviewAPI.getOrCreateUserByKakao(
+      kakaoId,
+      sessionUser.email,
+      sessionUser.name
+    );
 
-    // 5) /users/me 로 PATCH 요청 보내기
+    const backendAuthId = userInfo.user.auth_id;
+
+    // 3) ReviewAPI 가 쓰는 백엔드 base URL 재사용
+    const API_BASE = API_BASE_URL; 
+
+    // 4) /users/me 로 PATCH 요청 보내기
     const resp = await fetch(`${API_BASE}/users/me`, {
       method: 'PATCH',
       headers: {
         'Content-Type': 'application/json',
-        'X-Auth-Id': kakaoId,          // ✅ 스웨거에서 요구하는 헤더
+        'X-Auth-Id': backendAuthId,
       },
-      body: JSON.stringify({
-        max_height_cm: cm,             // ✅ 스키마에 맞는 필드명
-      }),
+      body: JSON.stringify({ max_height_cm: cm }),
     });
 
     if (!resp.ok) {
-      const errBody = await resp.text();   // 디버깅용
+      const errBody = await resp.text();
       console.error('max_height_cm update failed:', resp.status, errBody);
       alert('저장에 실패했습니다. 잠시 후 다시 시도해 주세요.');
       return;
     }
 
     alert('저장되었습니다.');
+
+    // 마이페이지 열려있다면 표시값도 갱신
+    const maxHeightEl = document.getElementById('mypageMaxHeightCm');
+    if (maxHeightEl) {
+      maxHeightEl.textContent = cm;
+    }
+
     closeHeightModal();
   } catch (e) {
     console.error('max_height_cm update error:', e);
