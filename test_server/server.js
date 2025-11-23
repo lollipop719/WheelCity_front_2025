@@ -4,8 +4,8 @@
 const KAKAO_JS_KEY = '01785b9a288ab46417b78a3790ac85c5'; // 서버 시작 전 반드시 확인하기!
 const KAKAO_REST_KEY = 'cd7557809738d1512f8d09b00fbe9afb'; // Kakao REST API 키 - 서버에서만 사용
 // 로컬 개발용: http://localhost:3000/auth/kakao/callback
-// 프로덕션용: https://test.sbserver.store/auth/kakao/callback
-const KAKAO_REDIRECT_URI = 'https://test.sbserver.store/auth/kakao/callback';
+// 프로덕션용: https://wheelcity.sbserver.store/auth/kakao/callback
+const KAKAO_REDIRECT_URI = 'https://wheelcity.sbserver.store/auth/kakao/callback';
 
 const express = require('express');
 const path = require('path');
