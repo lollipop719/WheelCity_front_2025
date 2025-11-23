@@ -467,8 +467,16 @@
 }
 
 /* 모바일 대응: 화면 좁을 때는 살짝 더 넓게/아래로 */
-
 @media (max-width: 768px) {
+
+  /* ✅ 로그인 / 마이페이지 pill 을 화면 오른쪽 맨 위에 고정 */
+  .user-box {
+    position: fixed;   /* 모바일에서는 뷰포트 기준으로 고정 */
+    top: 12px;         /* 상태바 바로 아래 정도 */
+    right: 12px;
+    z-index: 70;       /* 검색창(10)보다 항상 위에 */
+  }
+
   .mypage-backdrop {
     align-items: flex-start;
     justify-content: center;

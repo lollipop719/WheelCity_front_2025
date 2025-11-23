@@ -481,7 +481,65 @@
 		padding-bottom: 0 !important;
 	}
 
+	/* 내 위치로 이동 버튼 */
+	.my-location-btn {
+	position: absolute;
+	right: 16px;
+	bottom: 32px;
+	width: 44px;
+	height: 44px;
+	border-radius: 50%;
+	background: #ffffff;
+	box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	cursor: pointer;
+	z-index: 20; /* 검색창, 결과창보다 위에 오도록 */
+	}
 
+	.my-location-btn svg {
+	width: 22px;
+	height: 22px;
+	stroke: #2563eb;
+	fill: #2563eb20;
+	}
+
+	/* 눌렀을 때 살짝 강조 */
+	.my-location-btn:active {
+	transform: scale(0.96);
+	}
+
+	/* 내 위치 마커 (방향 화살표 포함) */
+	.my-location-marker {
+	width: 34px;
+	height: 34px;
+	border-radius: 50%;
+	background: rgba(37, 99, 235, 0.18);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	}
+
+	.my-location-marker-inner {
+	width: 18px;
+	height: 18px;
+	border-radius: 50%;
+	background: #2563eb;
+	position: relative;
+	}
+
+	/* 위쪽으로 향하는 삼각형 (heading 기준으로 회전) */
+	.my-location-marker-inner::after {
+	content: '';
+	position: absolute;
+	top: -7px;
+	left: 50%;
+	transform: translateX(-50%);
+	border-width: 7px 5px 0 5px;
+	border-style: solid;
+	border-color: #2563eb transparent transparent transparent;
+	}
 		/* === 모바일 전용 레이아웃 조정 (추가) === */
 		@media (max-width: 768px) {
 		/* 검색창을 화면 가로 중앙에 크게 배치 */
@@ -631,6 +689,17 @@
 	</div>
 	<div id="map"></div>
 
+	<div id="map"></div>
+
+	<!-- 내 위치로 이동 버튼 -->
+	<div class="my-location-btn" id="myLocationBtn">
+	<svg viewBox="0 0 24 24" aria-hidden="true">
+		<circle cx="12" cy="12" r="3" />
+		<path d="M12 3v3M12 18v3M3 12h3M18 12h3" stroke-width="2" fill="none" />
+	</svg>
+	</div>
+
+
 	<!-- 리뷰 작성 모달 -->
 	<div class="review-modal-backdrop" id="reviewModalBackdrop">
 		<div class="review-modal-sheet">
@@ -718,6 +787,7 @@
 	<script src="/js/search.js"></script>
 	<script src="/js/markers.js"></script>
 	<script src="/js/events.js"></script>
+	<script src="/js/location.js"></script>
 
 </body>
 </html>

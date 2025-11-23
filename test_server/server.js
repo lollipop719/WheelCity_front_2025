@@ -204,6 +204,7 @@ app.post('/session/crawl/places', async (req, res) => {
 });
 */
 
+/*
 // ===== 웹사이트 정보 크롤링 API =====
 let websiteCrawlApi = null;
 try {
@@ -237,6 +238,7 @@ app.post('/crawl/website', async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 });
+*/
 
 // ===== 블로그 리뷰 크롤링 API =====
 // [주석처리됨 - 블로그 탭 제거에 따라 임시 비활성화]
