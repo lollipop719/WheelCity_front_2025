@@ -601,6 +601,18 @@ heightSaveBtn.addEventListener('click', async () => {
       maxHeightEl.textContent = cm;
     }
 
+    // 캐시 무효화/즉시 갱신: 다음 마이페이지 오픈 시 최신값 보이도록
+    resetCaches();
+    if (cachedUserInfo && cachedUserInfo.user) {
+      cachedUserInfo = {
+        ...cachedUserInfo,
+        user: {
+          ...cachedUserInfo.user,
+          max_height_cm: cm,
+        },
+      };
+    }
+
     closeHeightModal();
   } catch (e) {
     console.error('max_height_cm update error:', e);
