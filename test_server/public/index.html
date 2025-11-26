@@ -529,6 +529,44 @@
 	position: relative;
 	}
 
+	/* Container to position buttons below the search bar */
+	.quick-search-container {
+        position: absolute;
+        top: 114px;  /* 검색창 바로 아래 (59px + 45px + 10px 여백) */
+        left: 52px;  /* 검색창과 왼쪽 라인 맞춤 */
+        z-index: 10;
+        display: flex;
+        gap: 8px;
+    }
+
+	/* Button Styling */
+	.quick-btn {
+		background-color: white;
+		border: 1px solid #ddd;
+		border-radius: 20px; /* Pill shape */
+		padding: 8px 14px;
+		font-size: 14px;
+		font-weight: 500;
+		color: #333;
+		cursor: pointer;
+		box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+		display: flex;
+		align-items: center;
+		transition: all 0.2s ease;
+	}
+
+	/* Hover Effect */
+	.quick-btn:hover {
+		background-color: #f1f3f5;
+		box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+		transform: translateY(-1px);
+	}
+
+	/* Icon spacing */
+	.quick-btn .icon {
+		margin-right: 6px;
+	}
+
 	/* 위쪽으로 향하는 삼각형 (heading 기준으로 회전) */
 	.my-location-marker-inner::after {
 	content: '';
@@ -552,6 +590,25 @@
 				border-radius: 999px;
 			}
 
+			.quick-search-container {
+                top: 125px; /* 모바일 검색창(70px + 높이) 아래 */
+                left: 50%;
+                transform: translateX(-50%); /* 가운데 정렬 */
+                width: 100%;
+                justify-content: center; /* 버튼들을 가운데로 모음 */
+                padding: 0 16px; /* 좌우 여백 */
+                box-sizing: border-box;
+                /* 가로 스크롤이 필요할 경우를 대비한 설정 */
+                overflow-x: auto; 
+                white-space: nowrap;
+                /* 스크롤바 숨기기 */
+                -ms-overflow-style: none;  /* IE and Edge */
+                scrollbar-width: none;  /* Firefox */
+            }
+            .quick-search-container::-webkit-scrollbar {
+                display: none; /* Chrome, Safari, Opera */
+            }
+
 			/* 장소 상세/검색 결과 패널을 가운데 카드처럼 */
 			.search-results,
 			.place-detail {
@@ -567,12 +624,12 @@
 				height: calc(100vh - 140px);          /* 화면 높이에 맞춰 스크롤 */
 			}
 
-		/* 상세 카드도 화면 안에 들어오도록 */
-		.place-detail {
-			top: 120px;
-			max-height: calc(100vh - 140px);
-			display: flex;
-		}
+			/* 상세 카드도 화면 안에 들어오도록 */
+			.place-detail {
+				top: 120px;
+				max-height: calc(100vh - 140px);
+				display: flex;
+			}
 		}
 		/* === 모바일 전용 레이아웃 조정 (추가) === */
 
@@ -586,6 +643,17 @@
 				<path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
 			</svg>
 		</div>
+	</div>
+	<div class="quick-search-container">
+		<button class="quick-btn" onclick="triggerQuickSearch('음식점')">
+			<span class="icon">🍽️</span> 음식점
+		</button>
+		<button class="quick-btn" onclick="triggerQuickSearch('카페')">
+			<span class="icon">☕</span> 카페
+		</button>
+		<button class="quick-btn" onclick="triggerQuickSearch('편의점')">
+			<span class="icon">🏪</span> 편의점
+		</button>
 	</div>
 	<div class="place-detail" id="placeDetail" style="display: none;">
 		<div class="place-detail-header">
