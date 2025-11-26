@@ -208,6 +208,7 @@
 		overflow-y: auto;
 		overflow-x: hidden;
 		min-height: 0;
+		padding-bottom: 80px;
 	}
 	.tab-content {
 		display: none;
@@ -567,6 +568,17 @@
 		margin-right: 6px;
 	}
 
+		/* === 리뷰 모드 (상단 정보 숨김) === */
+	.place-detail.review-mode .place-detail-photo,
+	.place-detail.review-mode .place-detail-accessibility {
+		display: none !important;
+	}
+
+	/* 리뷰 탭일 때 헤더의 아래쪽 여백을 줄여서 더 넓게 씀 */
+	.place-detail.review-mode .place-detail-header {
+		margin-bottom: 0;
+	}
+
 	/* 위쪽으로 향하는 삼각형 (heading 기준으로 회전) */
 	.my-location-marker-inner::after {
 	content: '';
@@ -755,7 +767,7 @@
 		</div>
 		<div class="result-list" id="resultList"></div>
 	</div>
-	<div id="map"></div>
+	<!-- <div id="map"></div> -->
 
 	<div id="map"></div>
 

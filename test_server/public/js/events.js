@@ -85,6 +85,7 @@ document.querySelectorAll('.filter-btn').forEach(btn => {
 document.querySelectorAll('.place-detail-tab').forEach(tab => {
 	tab.addEventListener('click', function() {
 		const tabName = this.dataset.tab;
+		const placeDetail = document.getElementById('placeDetail'); // 상세 패널 요소 가져오기
 		
 		// 모든 탭의 active 클래스 제거
 		document.querySelectorAll('.place-detail-tab').forEach(t => {
@@ -105,10 +106,13 @@ document.querySelectorAll('.place-detail-tab').forEach(tab => {
 		
 		console.log('탭 선택:', tabName);
 		
-		// 리뷰 탭 선택 시 - 매장 리뷰 로드
-		if (tabName === 'review' && window.currentPlace) {
-			loadShopReviews(window.currentPlace);
-		}
+		// === [핵심 기능] 리뷰 탭이면 상단 정보 숨기기 ===
+        if (tabName === 'review') {
+            if (placeDetail) placeDetail.classList.add('review-mode');
+        } else {
+            // 홈이나 사진 탭이면 다시 보이기
+            if (placeDetail) placeDetail.classList.remove('review-mode');
+        }
 		
 		// 블로그 탭 선택 시 - 이미 매장 선택 시 자동으로 크롤링되므로 여기서는 처리하지 않음
 		// if (tabName === 'blog') {
