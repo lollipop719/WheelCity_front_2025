@@ -38,6 +38,63 @@
 			z-index: 10;
 			box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 		}
+
+	.search-suggestions {
+			position: absolute;
+			left: 0;
+			top: 100%;               /* 검색창 바로 아래 */
+			margin-top: 4px;
+			padding: 0;
+			list-style: none;
+			background: #ffffff;
+			border: 1px solid #ddd;
+			border-radius: 10px;
+			max-height: 260px;
+			overflow-y: auto;
+			width: 100%;
+			box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+			z-index: 999;
+			box-sizing: border-box;
+			display: none;           /* 기본은 숨김 */
+			}
+
+		.search-suggestions li {
+			padding: 8px 12px;
+			cursor: pointer;
+			font-family: 'Inter', sans-serif;
+			font-size: 14px;
+			color: #333;
+		}
+
+		.search-suggestions li span.place-name {
+			font-weight: 600;
+		}
+
+		.search-suggestions li span.place-address {
+			display: block;
+			margin-top: 2px;
+			font-size: 12px;
+			color: #888;
+		}
+
+		.search-suggestions li:hover {
+			background: #f9f9f9;
+		}
+
+		/* 검색 추천 리스트 안에서 이름 + 거리 한 줄 배치 */
+		.suggestion-top {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		}
+
+		.place-distance {
+		font-size: 10px;
+		color: #999;
+		margin-left: 8px;
+		white-space: nowrap;
+		}
+
 		.search-box input {
 			flex: 1;
 			border: none;
