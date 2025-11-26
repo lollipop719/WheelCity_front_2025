@@ -319,8 +319,8 @@ if (reviewForm) {
 				curb: Boolean(reviewState.curb),
 				ramp: Boolean(reviewState.ramp),
 				comfort: reviewState.comfort === null ? null : Boolean(reviewState.comfort),
-				review_text: (reviewTextEl && reviewTextEl.value.trim()) || '',
-			};
+			review_text: (reviewTextEl && reviewTextEl.value.trim()) || '',
+		};
 
 			console.log('리뷰 데이터:', reviewData);
 			console.log('이미지 파일 개수:', imageFiles.length);
@@ -375,7 +375,7 @@ if (reviewForm) {
 			});
 			if (reviewSectionAlone) reviewSectionAlone.style.display = 'none';
 			
-			closeReviewModal();
+				closeReviewModal();
 		} catch (err) {
 			console.error('리뷰 제출 오류:', err);
 			alert('리뷰 전송 중 오류가 발생했습니다: ' + (err.message || '알 수 없는 오류'));
