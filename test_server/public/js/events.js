@@ -130,6 +130,7 @@ document.querySelectorAll('.place-detail-tab').forEach(tab => {
             if (placeDetail) {
 				placeDetail.classList.add('review-mode');
 				loadShopReviews(window.currentPlace);
+			}
         } else {
             // 홈이나 사진 탭이면 다시 보이기
             if (placeDetail) placeDetail.classList.remove('review-mode');
