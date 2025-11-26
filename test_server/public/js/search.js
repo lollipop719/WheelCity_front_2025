@@ -1,6 +1,28 @@
 // 전역 검색 결과 저장소 (웹사이트 정보 매칭용)
 let globalSearchResults = [];
 
+// 퀵 카테고리 검색 (음식점/카페/편의점 버튼)
+window.triggerQuickSearch = function(keyword) {
+  if (!keyword) return;
+  const input = document.getElementById('searchInput');
+  if (input) {
+    input.value = keyword;
+  }
+  // 추천창 닫기
+  if (typeof clearSuggestions === 'function') {
+    clearSuggestions();
+  }
+  // 카테고리와 상관없이 키워드 검색 실행
+  if (typeof searchPlaces === 'function') {
+    searchPlaces(keyword, null);
+  }
+  // 검색 결과 패널 열기
+  const searchResultsEl = document.getElementById('searchResults');
+  if (searchResultsEl) {
+    searchResultsEl.style.display = 'flex';
+  }
+};
+
 //자동완성(검색 추천) 기능
 const searchInput = document.getElementById("searchInput");
 const searchSuggestions = document.getElementById("searchSuggestions");
@@ -8,6 +30,47 @@ const searchSuggestions = document.getElementById("searchSuggestions");
 let suggestDebounceTimer = null;
 let lastSuggestRequestId = 0;   // 오래된 응답 무시용
 let suggestionsEnabled = true;   // 추천 표시 여부 플래그
+
+function handleSuggestionSelect(place) {
+  if (!place) return;
+
+  // 검색창 값 반영
+  if (searchInput) {
+    searchInput.value = place.place_name || '';
+  }
+
+  // 추천 목록 닫기
+  clearSuggestions();
+
+  // 지도 이동 및 마커 표시
+  try {
+    if (typeof map !== 'undefined' && map.panTo && place.y && place.x) {
+      map.panTo(new kakao.maps.LatLng(place.y, place.x));
+    }
+
+    // 전역 결과/마커 동기화
+    if (Array.isArray(globalSearchResults)) {
+      globalSearchResults = [place];
+    }
+
+    if (typeof displayMarkers === 'function') {
+      displayMarkers([place]);
+    }
+  } catch (e) {
+    console.warn('[suggestion] 지도/마커 업데이트 실패:', e);
+  }
+
+  // 상세 패널 바로 열기 (검색 패널 건너뛰기)
+  if (typeof showPlaceDetail === 'function') {
+    showPlaceDetail(place, null);
+    return;
+  }
+
+  // fallback: 기존 검색 실행
+  if (typeof searchPlaces === 'function') {
+    searchPlaces(place.place_name, null);
+  }
+}
 
 // 현재 입력창 값이 특정 query와 동일하고 비어있지 않은지 확인
 function isActiveQuery(query) {
@@ -129,19 +192,7 @@ function renderSuggestions(placesData, queryForSort) {
       }
     `;
 
-    li.addEventListener("click", () => {
-      if (searchInput) {
-        searchInput.value = place.place_name;
-      }
-      clearSuggestions();
-
-      const searchBtn = document.getElementById("searchBtn");
-      if (searchBtn) {
-        searchBtn.click();
-      } else if (typeof searchPlaces === "function") {
-        searchPlaces(place.place_name, null);
-      }
-    });
+    li.addEventListener("click", () => handleSuggestionSelect(place));
 
     searchSuggestions.appendChild(li);
   });
