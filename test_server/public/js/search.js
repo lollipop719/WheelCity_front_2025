@@ -1,6 +1,13 @@
 // 전역 검색 결과 저장소 (웹사이트 정보 매칭용)
 let globalSearchResults = [];
 
+// 활성 필터 상태 저장
+let activeFilters = {
+	open: false,
+	ramp: false,
+	wheelchair: false
+};
+
 // 퀵 카테고리 검색 (음식점/카페/편의점 버튼)
 window.triggerQuickSearch = function(keyword) {
   if (!keyword) return;
@@ -476,8 +483,8 @@ function searchPlaces(keyword, category) {
     // 전역 변수에 검색 결과 저장
     globalSearchResults = data;
 
-    displayResults(data);
-    displayMarkers(data);
+    // 필터 적용
+    applyFilters();
 
     if (searchResultsEl) {
       searchResultsEl.style.display = 'flex';
@@ -824,4 +831,119 @@ async function enrichWebsiteDataForPlace(place, index) {
   } catch (error) {
     console.error(`[ERROR] [${place.place_name}] 웹사이트 크롤링 실패:`, error);
   }
+}
+
+// 필터 적용 함수
+function applyFilters() {
+  if (!globalSearchResults || globalSearchResults.length === 0) {
+    return;
+  }
+
+  let filteredResults = globalSearchResults.filter(place => {
+    // 영업중 필터
+    if (activeFilters.open) {
+      if (!place.businessHours || place.businessHours === '영업 시간 정보 없음') {
+        return false;
+      }
+      
+      // 영업시간 정보 파싱
+      let isOpen = false;
+      if (typeof place.businessHours === 'object' && place.businessHours.summary) {
+        const summary = place.businessHours.summary;
+        isOpen = summary.includes('영업 중');
+      } else if (typeof place.businessHours === 'string') {
+        isOpen = place.businessHours.includes('영업 중');
+      }
+      
+      if (!isOpen) {
+        return false;
+      }
+    }
+
+    // 경사로 필터
+    if (activeFilters.ramp) {
+      const accessibilityInfo = place.accessibilityInfo || '';
+      if (!accessibilityInfo.includes('경사로')) {
+        return false;
+      }
+    }
+
+    // 화장실 필터
+    if (activeFilters.wheelchair) {
+      const accessibilityInfo = place.accessibilityInfo || '';
+      if (!accessibilityInfo.includes('화장실')) {
+        return false;
+      }
+    }
+
+    return true;
+  });
+
+  // 필터링된 결과 표시
+  if (filteredResults.length === 0) {
+    const resultListEl = document.getElementById('resultList');
+    if (resultListEl) {
+      resultListEl.innerHTML = '<div style="padding: 26px; text-align: center; color: #999;">필터 조건에 맞는 결과가 없습니다.</div>';
+    }
+    // 마커 제거
+    if (Array.isArray(markers)) {
+      markers.forEach(marker => marker.setMap(null));
+    }
+    markers = [];
+  } else {
+    displayResults(filteredResults);
+    displayMarkers(filteredResults);
+
+    // 지도 범위 조정
+    const bounds = new kakao.maps.LatLngBounds();
+    filteredResults.forEach(place => {
+      bounds.extend(new kakao.maps.LatLng(place.y, place.x));
+    });
+    map.setBounds(bounds);
+  }
+}
+
+// 필터 버튼 토글 함수 (전역으로 노출)
+window.toggleFilter = function(filterType) {
+  // type 필터는 제외
+  if (filterType === 'type') {
+    return;
+  }
+
+  // 필터 상태 토글
+  if (activeFilters.hasOwnProperty(filterType)) {
+    activeFilters[filterType] = !activeFilters[filterType];
+  }
+
+  // 필터 버튼 UI 업데이트
+  const filterBtn = document.querySelector(`.filter-btn[data-filter="${filterType}"]`);
+  if (filterBtn) {
+    if (activeFilters[filterType]) {
+      filterBtn.classList.add('active');
+    } else {
+      filterBtn.classList.remove('active');
+    }
+  }
+
+  // 필터 적용
+  applyFilters();
+}
+
+// 필터 초기화 함수
+window.resetFilters = function() {
+  activeFilters = {
+    open: false,
+    ramp: false,
+    wheelchair: false
+  };
+  
+  // 모든 필터 버튼의 active 클래스 제거
+  document.querySelectorAll('.filter-btn').forEach(btn => {
+    if (btn.dataset.filter !== 'type') {
+      btn.classList.remove('active');
+    }
+  });
+  
+  // 필터 적용
+  applyFilters();
 }

@@ -75,9 +75,22 @@ document.getElementById('searchInput').addEventListener('keypress', function(e) 
 // 필터 버튼 클릭
 document.querySelectorAll('.filter-btn').forEach(btn => {
 	btn.addEventListener('click', function() {
+		const filterType = this.dataset.filter;
+		
+		// type 필터는 제외 (필터 아이콘 버튼)
+		if (filterType === 'type') {
+			return;
+		}
+
+		// active 클래스 토글
 		this.classList.toggle('active');
-		// 필터링 로직은 여기에 추가 가능
-		console.log('Filter:', this.dataset.filter, 'Active:', this.classList.contains('active'));
+		
+		// 필터 함수 호출
+		if (typeof window.toggleFilter === 'function') {
+			window.toggleFilter(filterType);
+		}
+		
+		console.log('Filter:', filterType, 'Active:', this.classList.contains('active'));
 	});
 });
 
