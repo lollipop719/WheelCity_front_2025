@@ -1,79 +1,607 @@
 // 전역 검색 결과 저장소 (웹사이트 정보 매칭용)
 let globalSearchResults = [];
 
-// 검색 함수
-function searchPlaces(keyword, category) {
-	console.log('=== searchPlaces 함수 실행 ===');
-	console.log('키워드:', keyword);
-	console.log('카테고리:', category);
-	
-	// 기존 마커 제거
-	markers.forEach(marker => marker.setMap(null));
-	markers = [];
-	
-	// 상세 정보 패널 숨기기
-	document.getElementById('placeDetail').style.display = 'none';
+// 퀵 카테고리 검색 (음식점/카페/편의점 버튼)
+window.triggerQuickSearch = function(keyword) {
+  if (!keyword) return;
+  const input = document.getElementById('searchInput');
+  if (input) {
+    input.value = keyword;
+  }
+  // 추천창 닫기
+  if (typeof clearSuggestions === 'function') {
+    clearSuggestions();
+  }
+  // 카테고리와 상관없이 키워드 검색 실행
+  if (typeof searchPlaces === 'function') {
+    searchPlaces(keyword, null);
+  }
+  // 검색 결과 패널 열기
+  const searchResultsEl = document.getElementById('searchResults');
+  if (searchResultsEl) {
+    searchResultsEl.style.display = 'flex';
+  }
+};
 
-	var callback = function(data, status) {
-		console.log('검색 상태:', status);
-		console.log('검색 데이터:', data);
-		
-		// 각 장소의 ID 출력
-		data.forEach((place, idx) => {
-			console.log(`${idx + 1}. ${place.place_name} - ID: ${place.id}`);
-		});
-		
-	if (status === kakao.maps.services.Status.OK) {
-		console.log('검색 성공! 결과 수:', data.length);
-		
-		// 전역 변수에 검색 결과 저장 (기본 데이터)
-		globalSearchResults = data;
-		
-		// 즉시 화면에 표시 (크롤링 없이)
-		displayResults(data);
-		displayMarkers(data);
-		
-		// 검색 결과 패널 표시
-		document.getElementById('searchResults').style.display = 'flex';
-		
-		// 지도 범위 조정
-		var bounds = new kakao.maps.LatLngBounds();
-		data.forEach(place => {
-			bounds.extend(new kakao.maps.LatLng(place.y, place.x));
-		});
-		map.setBounds(bounds);
-		
-		// 백그라운드에서 크롤링 시작 (완료되면 자동 업데이트)
-		console.log('[크롤링] 백그라운드 크롤링 시작...');
-		enrichPlacesDataInBackground(data);
-	} else if (status === kakao.maps.services.Status.ZERO_RESULT) {
-			console.log('검색 결과 없음');
-			document.getElementById('resultList').innerHTML = '<div style="padding: 26px; text-align: center; color: #999;">검색 결과가 없습니다.</div>';
-			document.getElementById('searchResults').style.display = 'flex';
-		} else if (status === kakao.maps.services.Status.ERROR) {
-			console.error('검색 에러 발생!');
-			document.getElementById('resultList').innerHTML = '<div style="padding: 26px; text-align: center; color: #f44;">검색 중 오류가 발생했습니다.</div>';
-			document.getElementById('searchResults').style.display = 'flex';
+//자동완성(검색 추천) 기능
+const searchInput = document.getElementById("searchInput");
+const searchSuggestions = document.getElementById("searchSuggestions");
+
+let suggestDebounceTimer = null;
+let lastSuggestRequestId = 0;   // 오래된 응답 무시용
+let suggestionsEnabled = true;   // 추천 표시 여부 플래그
+
+function handleSuggestionSelect(place) {
+  if (!place) return;
+
+  // 검색창 값 반영
+  if (searchInput) {
+    searchInput.value = place.place_name || '';
+  }
+
+  // 추천 목록 닫기
+  clearSuggestions();
+
+  // 지도 이동 및 마커 표시
+  try {
+    if (typeof map !== 'undefined' && map.panTo && place.y && place.x) {
+      map.panTo(new kakao.maps.LatLng(place.y, place.x));
+    }
+
+    // 전역 결과/마커 동기화
+    if (Array.isArray(globalSearchResults)) {
+      globalSearchResults = [place];
+    }
+
+    if (typeof displayMarkers === 'function') {
+      displayMarkers([place]);
+    }
+  } catch (e) {
+    console.warn('[suggestion] 지도/마커 업데이트 실패:', e);
+  }
+
+  // 상세 패널 바로 열기 (검색 패널 건너뛰기)
+  if (typeof showPlaceDetail === 'function') {
+    showPlaceDetail(place, null);
+    return;
+  }
+
+  // fallback: 기존 검색 실행
+  if (typeof searchPlaces === 'function') {
+    searchPlaces(place.place_name, null);
+  }
+}
+
+// 현재 입력창 값이 특정 query와 동일하고 비어있지 않은지 확인
+function isActiveQuery(query) {
+  if (!searchInput) return true;
+  const current = searchInput.value.trim();
+  return current.length > 0 && current === query.trim();
+}
+
+// 추천 리스트 지우기 & 숨기기
+function clearSuggestions() {
+  if (!searchSuggestions) return;
+  searchSuggestions.innerHTML = "";
+  searchSuggestions.style.display = "none";
+}
+
+// 지도 중심과 장소 사이의 거리(m) 계산
+function getDistanceFromCenter(place) {
+  try {
+    if (typeof map === "undefined" || !map.getCenter) {
+      return Number.POSITIVE_INFINITY;
+    }
+
+    const center = map.getCenter();
+    const lat1 = center.getLat();
+    const lon1 = center.getLng();
+
+    const lat2 = parseFloat(place.y);
+    const lon2 = parseFloat(place.x);
+
+    if (isNaN(lat2) || isNaN(lon2)) {
+      return Number.POSITIVE_INFINITY;
+    }
+
+    const R = 6371000; // m
+    const toRad = (deg) => (deg * Math.PI) / 180;
+
+    const dLat = toRad(lat2 - lat1);
+    const dLon = toRad(lon2 - lon1);
+
+    const a =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(toRad(lat1)) *
+        Math.cos(toRad(lat2)) *
+        Math.sin(dLon / 2) *
+        Math.sin(dLon / 2);
+
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c;
+  } catch (e) {
+    return Number.POSITIVE_INFINITY;
+  }
+}
+
+// 1순위: place_name 안에서 query 위치 (앞에 있을수록)
+// 2순위: 지도 중심에서의 거리(가까울수록)
+function sortPlacesForSuggestions(places, query) {
+  return places.slice().sort((a, b) => {
+    const nameA = a.place_name || "";
+    const nameB = b.place_name || "";
+
+    const idxA = nameA.indexOf(query);
+    const idxB = nameB.indexOf(query);
+
+    const posA = idxA === -1 ? 9999 : idxA;
+    const posB = idxB === -1 ? 9999 : idxB;
+
+    if (posA !== posB) {
+      return posA - posB; // 검색어가 더 앞에 나오는 이름 우선
+    }
+
+    const distA = getDistanceFromCenter(a);
+    const distB = getDistanceFromCenter(b);
+    return distA - distB; // 가까울수록 위로
+  });
+}
+
+// 추천 리스트 렌더링
+function renderSuggestions(placesData, queryForSort) {
+  // 엔터 이후 비활성화된 상태면, 절대 다시 안 띄우기
+  if (!suggestionsEnabled) {
+    clearSuggestions();
+    return;
+  }
+
+  if (!searchSuggestions) return;
+
+  searchSuggestions.innerHTML = "";
+
+  const sorted = sortPlacesForSuggestions(placesData, queryForSort);
+
+  sorted.forEach((place) => {
+    const li = document.createElement("li");
+
+    const distance = getDistanceFromCenter(place);
+    let distanceLabel = "";
+    if (isFinite(distance)) {
+      if (distance < 1000) {
+        distanceLabel = `${Math.round(distance)}m`;
+      } else {
+        distanceLabel = `${(distance / 1000).toFixed(1)}km`;
+      }
+    }
+
+    li.innerHTML = `
+      <div class="suggestion-top">
+        <span class="place-name">${place.place_name}</span>
+        ${
+          distanceLabel
+            ? `<span class="place-distance">${distanceLabel}</span>`
+            : ""
+        }
+      </div>
+      ${
+        place.road_address_name
+          ? `<span class="place-address">${place.road_address_name}</span>`
+          : place.address_name
+          ? `<span class="place-address">${place.address_name}</span>`
+          : ""
+      }
+    `;
+
+    li.addEventListener("click", () => handleSuggestionSelect(place));
+
+    searchSuggestions.appendChild(li);
+  });
+
+  searchSuggestions.style.display = sorted.length ? "block" : "none";
+}
+
+
+/**
+ * 실제 kakao API 호출
+ * 1차: keywordSearch 로 후보 가져오기
+ * 2차: categorySearch("CE7")로 근처 카페들 가져와서 이름에 query 포함된 애들만 뽑기
+ *   → 있으면 그 “근처 카페들”만 거리순으로 추천
+ *   → 없으면 1차 keyword 결과(전국) 사용
+ */
+function requestSuggestions(query, requestId) {
+  if (typeof places === "undefined") {
+    console.warn("[자동완성] places 객체가 없습니다.");
+    return;
+  }
+
+  const hasMapCenter = typeof map !== "undefined" && map.getCenter;
+  const center = hasMapCenter ? map.getCenter() : null;
+
+  // 1차: 키워드 검색 (전국 검색, 위치 제한 제거)
+  const keywordOptions = { size: 15 };
+
+  places.keywordSearch(
+    query,
+    function (keywordData, keywordStatus) {
+
+    	if (!suggestionsEnabled) {
+      		clearSuggestions();
+      		return;
+    	}
+
+      if (!isActiveQuery(query)) {
+        clearSuggestions();
+        return;
+      }
+	
+      if (requestId !== lastSuggestRequestId) return; // 오래된 응답 무시
+
+      const keywordHasData =
+        keywordStatus === kakao.maps.services.Status.OK &&
+        Array.isArray(keywordData) &&
+        keywordData.length > 0;
+
+      // 지도 중심 없으면 그냥 키워드 결과만 사용
+      if (!hasMapCenter) {
+        if (keywordHasData) {
+          renderSuggestions(keywordData, query);
+        } else {
+          clearSuggestions();
+        }
+        return;
+      }
+
+      // 2차: 근처 카페(CE7) 검색해서 이름에 query 포함된 애들만 필터
+      places.categorySearch(
+        "CE7", // 카페
+        function (catData, catStatus) {
+
+			if (!suggestionsEnabled) {
+      			clearSuggestions();
+      			return;
+    		}
+
+          if (!isActiveQuery(query)) {
+            clearSuggestions();
+            return;
+          }
+			
+          if (requestId !== lastSuggestRequestId) return;
+
+          let localMatches = [];
+          if (
+            catStatus === kakao.maps.services.Status.OK &&
+            Array.isArray(catData)
+          ) {
+            const lowerQuery = query.toLowerCase();
+            localMatches = catData.filter((p) => {
+              const name = (p.place_name || "").toLowerCase();
+              return name.includes(lowerQuery);
+            });
+          }
+
+          console.log(
+            "[자동완성]",
+            "query:", query,
+            "keyword:", keywordStatus,
+            "keywordLen:", keywordHasData ? keywordData.length : 0,
+            "localLen:", localMatches.length
+          );
+
+          if (localMatches.length > 0) {
+            // 근처 카페 중에서 이름에 query가 들어간 애들만, 거리순으로
+            renderSuggestions(localMatches, query);
+            return;
+          }
+
+          // 근처 매장 못 찾으면 → 키워드 결과(전국)라도 보여주자
+          if (keywordHasData) {
+            renderSuggestions(keywordData, query);
+          } else {
+            clearSuggestions();
+          }
+        },
+        {
+          location: center,
+          radius: 20000, // 20km 안 카페들
+          size: 15
+        }
+      );
+    },
+    keywordOptions
+  );
+}
+
+// 입력 이벤트
+if (searchInput) {
+  // 검색창에 포커스가 들어오면 다시 추천 허용
+  searchInput.addEventListener("focus", () => {
+    suggestionsEnabled = true;
+  });
+
+  searchInput.addEventListener("input", (e) => {
+	const raw = e.target.value;
+	const query = raw.trim();
+
+	if (!query) {
+		if (typeof clearSuggestions === 'function') {
+		clearSuggestions();
 		} else {
-			console.log('기타 상태:', status);
-			document.getElementById('resultList').innerHTML = '<div style="padding: 26px; text-align: center; color: #999;">검색 결과가 없습니다.</div>';
-			document.getElementById('searchResults').style.display = 'flex';
+		const ul = document.getElementById('searchSuggestions');
+		if (ul) {
+			ul.innerHTML = '';
+			ul.style.display = 'none';
 		}
-	};
-
-	if (category) {
-		// 카테고리 검색
-		places.categorySearch(category, callback, {
-			location: map.getCenter(),
-			radius: 5000
-		});
-	} else if (keyword) {
-		// 키워드 검색
-		places.keywordSearch(keyword, callback, {
-			location: map.getCenter(),
-			radius: 5000
-		});
+		}
+		return;
 	}
+
+    // 추천이 비활성화된 상태라면, 절대 다시 띄우지 않기
+    if (!suggestionsEnabled) {
+      if (typeof clearSuggestions === "function") {
+        clearSuggestions();
+      }
+      return;
+    }
+
+    if (query.length < 1) {
+      clearSuggestions();
+      return;
+    }
+
+    if (suggestDebounceTimer) {
+      clearTimeout(suggestDebounceTimer);
+    }
+
+    suggestDebounceTimer = setTimeout(() => {
+      lastSuggestRequestId += 1;
+      const requestId = lastSuggestRequestId;
+      requestSuggestions(query, requestId);
+    }, 200);
+  });
+
+  // (blur 리스너는 그대로 두거나, 없어도 큰 상관 없음)
+  searchInput.addEventListener("blur", () => {
+    setTimeout(clearSuggestions, 200);
+  });
+
+
+
+searchInput.addEventListener("keydown", (e) => {
+  // 한글 IME 조합 중에는 무시
+  if (e.isComposing || e.keyCode === 229) {
+    return;
+  }
+
+  if (e.key === "Enter") {
+    e.preventDefault();
+
+    // 이제부터는 추천 다시 띄우지 마!
+    suggestionsEnabled = false;
+
+    // 커서 없애기
+    searchInput.blur();
+
+    // 이전 자동완성 요청 전부 무효화
+    if (typeof lastSuggestRequestId === "number") {
+      lastSuggestRequestId++;
+    }
+
+    // 지금 떠 있는 추천 즉시 닫기
+    if (typeof clearSuggestions === "function") {
+      clearSuggestions();
+    }
+
+    // 돋보기 버튼 클릭과 동일하게 검색 실행
+    const searchBtn = document.getElementById("searchBtn");
+    if (searchBtn) {
+      searchBtn.click();
+    }
+  }
+});
+
+  // 포커스 빠지면 약간 있다가 닫기 (클릭 먼저 처리되도록)
+  searchInput.addEventListener("blur", () => {
+    setTimeout(clearSuggestions, 200);
+  });
+}
+
+
+// 기존 검색 기능 //
+function searchPlaces(keyword, category) {
+  console.log('=== searchPlaces 함수 실행 ===');
+  console.log('키워드:', keyword);
+  console.log('카테고리:', category);
+
+  // 검색 시작할 때 추천창 닫기
+  if (typeof clearSuggestions === 'function') {
+    clearSuggestions();
+  }
+
+  // 기존 마커 제거
+  if (Array.isArray(markers)) {
+    markers.forEach(marker => marker.setMap(null));
+  }
+  markers = [];
+
+  // 상세 정보 패널 숨기기
+  const detailPanel = document.getElementById('placeDetail');
+  if (detailPanel) {
+    detailPanel.style.display = 'none';
+  }
+
+  const searchResultsEl = document.getElementById('searchResults');
+  const resultListEl = document.getElementById('resultList');
+  const center = map.getCenter();
+  const originalKeyword = (keyword || '').trim();   // 🔹 원래 검색어 보관
+
+  // 공통: 이름 정규화 (공백 제거 + 소문자)
+  function normalizeName(str) {
+    return (str || '').toString().replace(/\s+/g, '').toLowerCase();
+  }
+
+  // 공통: 거리 기준 정렬
+  function sortByDistance(list) {
+    return (list || []).slice().sort((a, b) => {
+      const da = getDistanceFromCenter(a);
+      const db = getDistanceFromCenter(b);
+      return da - db;
+    });
+  }
+
+  // 결과 없음 표시
+  function showNoResult(msg) {
+    if (resultListEl) {
+      resultListEl.innerHTML =
+        `<div style="padding: 26px; text-align: center; color: #999;">${msg}</div>`;
+    }
+    if (searchResultsEl) {
+      searchResultsEl.style.display = 'flex';
+    }
+  }
+
+  // 실제 결과 렌더링
+  function showPlaces(rawData) {
+    if (!Array.isArray(rawData) || rawData.length === 0) {
+      showNoResult('검색 결과가 없습니다.');
+      return;
+    }
+
+    const data = rawData;
+    console.log('=== 검색 결과 ===');
+    data.forEach((place, idx) => {
+      console.log(`${idx + 1}. ${place.place_name}`);
+    });
+
+    // 전역 변수에 검색 결과 저장
+    globalSearchResults = data;
+
+    displayResults(data);
+    displayMarkers(data);
+
+    if (searchResultsEl) {
+      searchResultsEl.style.display = 'flex';
+    }
+
+    // 지도 범위 조정
+    const bounds = new kakao.maps.LatLngBounds();
+    data.forEach(place => {
+      bounds.extend(new kakao.maps.LatLng(place.y, place.x));
+    });
+    map.setBounds(bounds);
+
+    console.log('[크롤링] 백그라운드 크롤링 시작...');
+    enrichPlacesDataInBackground(data);
+  }
+
+  // ---------------------------
+  //  키워드 검색 (근처 → 전국 → 축약)
+  // ---------------------------
+  function runKeywordSearch(query, triedNationwide, triedShortened) {
+    console.log(
+      '[runKeywordSearch] query =', query,
+      'triedNationwide =', triedNationwide,
+      'triedShortened =', triedShortened
+    );
+
+    const options = triedNationwide
+      ? { size: 15 }                                // 전국 검색
+      : { location: center, radius: 5000, size: 15 }; // 근처 5km 검색
+
+    places.keywordSearch(query, function (data, status) {
+      console.log('[keywordSearch] status =', status, 'query =', query, 'data =', data);
+
+      // 성공: 여기서 이름 필터 + 거리 정렬까지 처리
+      if (status === kakao.maps.services.Status.OK &&
+          Array.isArray(data) &&
+          data.length > 0) {
+
+        let list = data.slice();
+
+        // 1) 항상 거리순 정렬
+        list = sortByDistance(list);
+
+        // 2) 축약 검색 단계(예: query = "스타", original = "스타벅")라면
+        //    → "스타벅"이 들어가는 이름을 먼저 필터링
+        const normOrig = normalizeName(originalKeyword);
+        const normQuery = normalizeName(query);
+
+        const isShortenedPhase =
+          triedShortened && normOrig.length > 0 && normQuery.length < normOrig.length;
+
+        if (isShortenedPhase) {
+          const filtered = list.filter(p =>
+            normalizeName(p.place_name).includes(normOrig)
+          );
+
+          // 필터링 결과가 있으면 그걸 우선 사용 (스타벅스 위주)
+          if (filtered.length > 0) {
+            console.log('[filter] 축약 단계에서 원래 키워드 포함 매장 우선 사용');
+            list = sortByDistance(filtered);
+          }
+        }
+
+        showPlaces(list);
+        return;
+      }
+
+      // 1단계: 근처 검색 실패 → 전국 검색
+      if (!triedNationwide) {
+        console.log('[fallback] 근처 결과 없음 → 전국 검색 시도');
+        runKeywordSearch(query, true, triedShortened);
+        return;
+      }
+
+      // 2단계: 전국 검색까지 실패, 아직 축약 검색 안 했고 글자수 2 이상이면
+      //    → 마지막 글자를 뺀 키워드로 전국 검색
+      if (!triedShortened && query.length >= 2) {
+        const shorter = query.slice(0, -1);
+        console.log('[fallback] 전국 검색도 실패 → 축약 키워드로 재검색:', shorter);
+        runKeywordSearch(shorter, true, true);
+        return;
+      }
+
+      // 3단계: 여기까지 왔으면 진짜로 없음
+      if (status === kakao.maps.services.Status.ERROR || status == null) {
+        console.error('검색 에러 발생!', status);
+        showNoResult('검색 중 오류가 발생했습니다.');
+      } else {
+        console.log('검색 결과 없음 / 기타 상태:', status);
+        showNoResult('검색 결과가 없습니다.');
+      }
+    }, options);
+  }
+
+  //  카테고리 검색 (원래 동작 유지)
+  function categoryCallback(data, status) {
+    console.log('[categorySearch] status =', status, 'data =', data);
+
+    if (status === kakao.maps.services.Status.OK &&
+        Array.isArray(data) &&
+        data.length > 0) {
+      // 카테고리 검색도 거리순으로만 정렬해서 보여주자
+      const sorted = sortByDistance(data);
+      showPlaces(sorted);
+    } else if (status === kakao.maps.services.Status.ZERO_RESULT) {
+      showNoResult('검색 결과가 없습니다.');
+    } else if (status === kakao.maps.services.Status.ERROR) {
+      console.error('검색 에러 발생!');
+      showNoResult('검색 중 오류가 발생했습니다.');
+    } else {
+      console.log('기타 상태:', status);
+      showNoResult('검색 결과가 없습니다.');
+    }
+  }
+
+  //  실제 호출
+  if (category) {
+    places.categorySearch(category, categoryCallback, {
+      location: map.getCenter(),
+      radius: 5000
+    });
+  } else if (keyword) {
+    runKeywordSearch(keyword, false, false);
+  }
 }
 
 // 백그라운드에서 각 장소를 개별적으로 크롤링 (완료되면 즉시 화면 업데이트)
@@ -297,71 +825,3 @@ async function enrichWebsiteDataForPlace(place, index) {
     console.error(`[ERROR] [${place.place_name}] 웹사이트 크롤링 실패:`, error);
   }
 }
-
-async function enrichWebsiteDataForPlace(place, index) {
-	if (!place.id) {
-	  console.log(`[${place.place_name}] Place ID 없음, 웹사이트 크롤링 스킵`);
-	  return;
-	}
-	
-	try {
-	  const response = await fetch('/crawl/website', {
-		method: 'POST',
-		headers: {
-		  'Content-Type': 'application/json'
-		},
-		body: JSON.stringify({ placeId: place.id })
-	  });
-	  
-	  if (response.ok) {
-		const result = await response.json();
-		
-		// 웹사이트 정보 업데이트
-		if (result.website) {
-		  place.website = result.website;
-		  console.log(`[OK] [${place.place_name}] 웹사이트: ${result.website}`);
-		}
-		
-		// 영업시간 정보 업데이트 (웹사이트 여부와 무관하게)
-		if (result.businessHours) {
-		  place.businessHours = result.businessHours;
-		  console.log(`[OK] [${place.place_name}] 영업시간 업데이트:`, result.businessHours);
-		  
-		  // 검색 결과 목록 업데이트
-		  updateResultItem(index, place);
-		  
-		  // 현재 열려있는 상세 패널도 업데이트
-		  updateOpenDetailPanel(place);
-		}
-		
-		// globalSearchResults 업데이트
-		if (globalSearchResults && globalSearchResults[index]) {
-		  globalSearchResults[index] = place;
-		}
-		
-		if (!result.website && !result.businessHours) {
-		  console.log(`[INFO] [${place.place_name}] 추가 정보 없음`);
-		}
-	  }
-	} catch (error) {
-	  console.error(`[ERROR] [${place.place_name}] 웹사이트 크롤링 실패:`, error);
-	}
-  }
-  
-  /**
-   * 퀵 서치 버튼 클릭 시 실행되는 함수
-   * @param {string} keyword - 검색 키워드 (예: '음식점')
-   */
-  function triggerQuickSearch(keyword) {
-	  const searchInput = document.getElementById('searchInput'); // index.html의 input ID
-  
-	  if (searchInput) {
-		  // 1. 검색창에 텍스트 입력
-		  searchInput.value = keyword;
-  
-		  // 2. 검색 함수 직접 실행 (search.js에 있는 함수)
-		  searchPlaces(keyword);
-	  } else {
-		  console.error("검색창(searchInput)을 찾을 수 없습니다.");
-	  }
-  }

@@ -246,7 +246,7 @@
   display: none;
   align-items: flex-start;          /* 상단에 붙이기 */
   justify-content: flex-end;        /* 오른쪽에 붙이기 */
-  padding: 10px 16px 16px 16px;     /* 오른쪽 상단 여백 */
+  padding: 59px 16px 16px 16px;     /* 장소 검색창과 상단 높이 맞춤 (59px) */
   box-sizing: border-box;
 }
 
