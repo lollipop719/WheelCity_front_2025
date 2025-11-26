@@ -176,6 +176,58 @@ const KAKAO_REDIRECT_URI = 'https://wheelcity.sbserver.store/auth/kakao/callback
   const heightSaveBtn = document.getElementById('heightSaveBtn');
 
   let currentUser = null;
+  // 백엔드 호출 캐시 (마이페이지 가속용)
+  let cachedUserInfo = null;
+  let cachedUserInfoPromise = null;
+  let cachedReviews = null;
+  let cachedReviewsPromise = null;
+
+  function resetCaches() {
+    cachedUserInfo = null;
+    cachedUserInfoPromise = null;
+    cachedReviews = null;
+    cachedReviewsPromise = null;
+  }
+
+  async function loadUserInfo(kakaoId, email, name) {
+    if (!kakaoId || !window.ReviewAPI?.getOrCreateUserByKakao) return null;
+    if (cachedUserInfo) return cachedUserInfo;
+    if (cachedUserInfoPromise) return cachedUserInfoPromise;
+
+    cachedUserInfoPromise = window.ReviewAPI.getOrCreateUserByKakao(
+      kakaoId,
+      email,
+      name
+    ).then((info) => {
+      cachedUserInfo = info;
+      cachedUserInfoPromise = null;
+      return info;
+    }).catch((err) => {
+      cachedUserInfoPromise = null;
+      throw err;
+    });
+
+    return cachedUserInfoPromise;
+  }
+
+  async function loadReviews(userId) {
+    if (!userId || !window.ReviewAPI?.getReviewsByUser) return { items: [] };
+    if (cachedReviews) return cachedReviews;
+    if (cachedReviewsPromise) return cachedReviewsPromise;
+
+    cachedReviewsPromise = window.ReviewAPI.getReviewsByUser(userId)
+      .then((data) => {
+        cachedReviews = data;
+        cachedReviewsPromise = null;
+        return data;
+      })
+      .catch((err) => {
+        cachedReviewsPromise = null;
+        throw err;
+      });
+
+    return cachedReviewsPromise;
+  }
 
   // ===== 로그인 모달 열고/닫기 =====
   function openModal() {
@@ -224,14 +276,20 @@ const KAKAO_REDIRECT_URI = 'https://wheelcity.sbserver.store/auth/kakao/callback
       mypageProfileImage.style.display = 'none';
     }
 
-    // 백엔드에서 실제 휠스코어 가져오기
+    // 먼저 마이페이지를 표시하고 데이터를 비동기 갱신 (체감속도 ↑)
+    mypageBackdropEl.style.display = 'flex';
+
+    // 백엔드에서 실제 휠스코어 / 사용자 정보 한 번에 가져오기
     const kakaoId = currentUser.kakaoId || currentUser.kakao_id;
     let scoreM = 0.0;
     let maxHeight = 0;
+    let userId = null;
+    let userInfo = null;
 
     try {
-      if (kakaoId && window.ReviewAPI && window.ReviewAPI.getOrCreateUserByKakao) {
-        const userInfo = await window.ReviewAPI.getOrCreateUserByKakao(
+      const hasAPI = kakaoId && window.ReviewAPI && window.ReviewAPI.getOrCreateUserByKakao;
+      if (hasAPI) {
+        userInfo = await loadUserInfo(
           kakaoId,
           currentUser.email,
           currentUser.name
@@ -239,6 +297,7 @@ const KAKAO_REDIRECT_URI = 'https://wheelcity.sbserver.store/auth/kakao/callback
 
         scoreM = userInfo.user?.review_score ?? 0.0;
         maxHeight = userInfo.user?.max_height_cm ?? 0;
+        userId = userInfo.user_id || userInfo.user?._id || null;
       }
     } catch (error) {
       console.error('휠스코어 가져오기 실패:', error);
@@ -258,96 +317,91 @@ const KAKAO_REDIRECT_URI = 'https://wheelcity.sbserver.store/auth/kakao/callback
 
     // 사용자 리뷰 가져오기
     try {
-      if (kakaoId && window.ReviewAPI && window.ReviewAPI.getOrCreateUserByKakao) {
-        const userInfo = await window.ReviewAPI.getOrCreateUserByKakao(
-          kakaoId,
-          currentUser.email,
-          currentUser.name
-        );
-        const userId = userInfo.user_id;
-        
-        if (userId && window.ReviewAPI.getReviewsByUser) {
-          const reviewsData = await window.ReviewAPI.getReviewsByUser(userId);
-          const reviews = reviewsData.items || [];
-          
-          if (reviews.length > 0) {
-            // Fetch shop info for each review
-            const reviewsWithShopInfo = await Promise.all(
-              reviews.map(async (review) => {
-                let shopInfo = { name: '알 수 없는 매장', image: null };
-                try {
-                  // shop_id might be ObjectId or string
-                  const shopId = review.shop_id || review.shopId;
-                  if (shopId && window.ReviewAPI && window.ReviewAPI.getShop) {
-                    // Convert ObjectId to string if needed
-                    const shopIdStr = typeof shopId === 'object' && shopId.$oid ? shopId.$oid : String(shopId);
-                    const shop = await window.ReviewAPI.getShop(shopIdStr);
+      if (userId) {
+        const reviewsData = await loadReviews(userId);
+        const reviews = reviewsData.items || [];
+
+        if (reviews.length > 0) {
+          // 동일 매장 중복 호출 방지를 위한 캐시
+          const shopCache = {};
+
+          const reviewsWithShopInfo = await Promise.all(
+            reviews.map(async (review) => {
+              let shopInfo = { name: '알 수 없는 매장', image: null };
+              try {
+                const shopId = review.shop_id || review.shopId;
+                if (shopId && window.ReviewAPI?.getShop) {
+                  const shopIdStr = typeof shopId === 'object' && shopId.$oid ? shopId.$oid : String(shopId);
+                  if (!shopCache[shopIdStr]) {
+                    shopCache[shopIdStr] = window.ReviewAPI.getShop(shopIdStr).catch((err) => {
+                      console.warn('[MYPAGE] Failed to fetch shop info for review:', err);
+                      return null;
+                    });
+                  }
+                  const shop = await shopCache[shopIdStr];
+                  if (shop) {
                     shopInfo = {
                       name: shop.name || '알 수 없는 매장',
                       image: shop.image || shop.photo_url || null
                     };
                   }
-                } catch (err) {
-                  console.warn('[MYPAGE] Failed to fetch shop info for review:', err);
                 }
-                return { ...review, shopInfo };
-              })
-            );
+              } catch (err) {
+                console.warn('[MYPAGE] Failed to fetch shop info for review:', err);
+              }
+              return { ...review, shopInfo };
+            })
+          );
+          
+          let html = '';
+          reviewsWithShopInfo.forEach(review => {
+            const reviewDate = review.created_at ? new Date(review.created_at).toLocaleDateString('ko-KR') : '';
+            const reviewText = review.review_text || '';
+            const photos = review.photo_urls || [];
+            const shopName = review.shopInfo?.name || '알 수 없는 매장';
+            const shopImage = review.shopInfo?.image;
             
-            let html = '';
-            reviewsWithShopInfo.forEach(review => {
-              const reviewDate = review.created_at ? new Date(review.created_at).toLocaleDateString('ko-KR') : '';
-              const reviewText = review.review_text || '';
-              const photos = review.photo_urls || [];
-              const shopName = review.shopInfo?.name || '알 수 없는 매장';
-              const shopImage = review.shopInfo?.image;
-              
-              // Color coding for review features
-              const getFeatureClass = (value, type) => {
-                if (value === null || value === undefined) return '';
-                if (type === 'enter') {
-                  return value ? 'mypage-review-tag-good' : 'mypage-review-tag-bad';
-                }
-                if (type === 'comfort') {
-                  return value ? 'mypage-review-tag-good' : 'mypage-review-tag-bad';
-                }
-                if (type === 'alone') {
-                  return value ? 'mypage-review-tag-good' : 'mypage-review-tag-warning';
-                }
-                return 'mypage-review-tag-neutral';
-              };
-              
-              html += `
-                <li class="mypage-review-item">
-                  <div class="mypage-review-header">
-                    <div class="mypage-review-shop-info">
-                      ${shopImage ? `<img src="${shopImage}" alt="${shopName}" class="mypage-review-shop-image" onerror="this.style.display='none'">` : ''}
-                      <span class="mypage-review-shop-name">${shopName}</span>
-                    </div>
-                    <span class="mypage-review-date">${reviewDate}</span>
+            // Color coding for review features
+            const getFeatureClass = (value, type) => {
+              if (value === null || value === undefined) return '';
+              if (type === 'enter') {
+                return value ? 'mypage-review-tag-good' : 'mypage-review-tag-bad';
+              }
+              if (type === 'comfort') {
+                return value ? 'mypage-review-tag-good' : 'mypage-review-tag-bad';
+              }
+              if (type === 'alone') {
+                return value ? 'mypage-review-tag-good' : 'mypage-review-tag-warning';
+              }
+              return 'mypage-review-tag-neutral';
+            };
+            
+            html += `
+              <li class="mypage-review-item">
+                <div class="mypage-review-header">
+                  <div class="mypage-review-shop-info">
+                    ${shopImage ? `<img src="${shopImage}" alt="${shopName}" class="mypage-review-shop-image" onerror="this.style.display='none'">` : ''}
+                    <span class="mypage-review-shop-name">${shopName}</span>
                   </div>
-                  ${reviewText ? `<div class="mypage-review-text">${reviewText}</div>` : ''}
-                  ${photos.length > 0 ? `
-                    <div class="mypage-review-photos">
-                      ${photos.map(url => `<img src="${url}" alt="리뷰 사진" class="mypage-review-photo" />`).join('')}
-                    </div>
-                  ` : ''}
-                  <div class="mypage-review-features">
-                    ${review.enter !== null ? `<span class="mypage-review-tag ${getFeatureClass(review.enter, 'enter')}">${review.enter ? '✓ 입장 가능' : '✗ 입장 불가'}</span>` : ''}
-                    ${review.alone !== null ? `<span class="mypage-review-tag ${getFeatureClass(review.alone, 'alone')}">${review.alone ? '✓ 혼자 가능' : '✗ 도움 필요'}</span>` : ''}
-                    ${review.ramp ? '<span class="mypage-review-tag mypage-review-tag-good">경사로</span>' : ''}
-                    ${review.curb ? '<span class="mypage-review-tag mypage-review-tag-warning">턱</span>' : ''}
-                    ${review.comfort !== null ? `<span class="mypage-review-tag ${getFeatureClass(review.comfort, 'comfort')}">${review.comfort ? '✓ 편함' : '✗ 불편함'}</span>` : ''}
+                  <span class="mypage-review-date">${reviewDate}</span>
+                </div>
+                ${reviewText ? `<div class="mypage-review-text">${reviewText}</div>` : ''}
+                ${photos.length > 0 ? `
+                  <div class="mypage-review-photos">
+                    ${photos.map(url => `<img src="${url}" alt="리뷰 사진" class="mypage-review-photo" />`).join('')}
                   </div>
-                </li>
-              `;
-            });
-            mypageReviewList.innerHTML = html;
-          } else {
-            mypageReviewList.innerHTML = `
-              <li class="mypage-review-empty">아직 작성한 리뷰가 없습니다.</li>
+                ` : ''}
+                <div class="mypage-review-features">
+                  ${review.enter !== null ? `<span class="mypage-review-tag ${getFeatureClass(review.enter, 'enter')}">${review.enter ? '✓ 입장 가능' : '✗ 입장 불가'}</span>` : ''}
+                  ${review.alone !== null ? `<span class="mypage-review-tag ${getFeatureClass(review.alone, 'alone')}">${review.alone ? '✓ 혼자 가능' : '✗ 도움 필요'}</span>` : ''}
+                  ${review.ramp ? '<span class="mypage-review-tag mypage-review-tag-good">경사로</span>' : ''}
+                  ${review.curb ? '<span class="mypage-review-tag mypage-review-tag-warning">턱</span>' : ''}
+                  ${review.comfort !== null ? `<span class="mypage-review-tag ${getFeatureClass(review.comfort, 'comfort')}">${review.comfort ? '✓ 편함' : '✗ 불편함'}</span>` : ''}
+                </div>
+              </li>
             `;
-          }
+          });
+          mypageReviewList.innerHTML = html;
         } else {
           mypageReviewList.innerHTML = `
             <li class="mypage-review-empty">아직 작성한 리뷰가 없습니다.</li>
@@ -562,6 +616,15 @@ heightSaveBtn.addEventListener('click', async () => {
       const r = await fetch('/session/me');
       const j = await r.json();
       currentUser = j.user || null;
+      if (!currentUser) {
+        resetCaches();
+      } else {
+        // 로그인된 순간 백그라운드로 사용자/리뷰 프리패치 (다음 마이페이지 진입 가속)
+        const kakaoId = currentUser.kakaoId || currentUser.kakao_id;
+        if (kakaoId) {
+          loadUserInfo(kakaoId, currentUser.email, currentUser.name).catch(() => {});
+        }
+      }
 
       if (currentUser && currentUser.profileImage) {
         userPillPhoto.src = currentUser.profileImage;
@@ -610,6 +673,7 @@ heightSaveBtn.addEventListener('click', async () => {
     } catch (e) {
       console.error(e);
     } finally {
+      resetCaches();
       closeMypage();
       refreshWho();
     }
