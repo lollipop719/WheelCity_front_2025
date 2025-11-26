@@ -166,12 +166,8 @@ function requestSuggestions(query, requestId) {
   const hasMapCenter = typeof map !== "undefined" && map.getCenter;
   const center = hasMapCenter ? map.getCenter() : null;
 
-  // 1차: 키워드 검색
+  // 1차: 키워드 검색 (전국 검색, 위치 제한 제거)
   const keywordOptions = { size: 15 };
-  if (hasMapCenter) {
-    keywordOptions.location = center;
-    keywordOptions.radius = 20000; // 20km
-  }
 
   places.keywordSearch(
     query,
