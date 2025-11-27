@@ -95,6 +95,101 @@ function parseBusinessStatus(hoursInfo) {
 	return result;
 }
 
+// 접근성 요약 (AI + 리뷰) 업데이트
+async function updateAccessSummary(place) {
+	const panel = document.getElementById('accessSummary');
+	const rampRow = document.getElementById('accessRamp');
+	const curbRow = document.getElementById('accessCurb');
+	const sourceRow = document.getElementById('accessSource');
+
+	if (!panel || !rampRow || !curbRow || !sourceRow) return;
+
+	panel.style.display = 'block';
+	rampRow.textContent = '경사로 정보 불러오는 중...';
+	curbRow.textContent = '계단/턱 정보 불러오는 중...';
+	sourceRow.textContent = '';
+
+	if (!window.ReviewAPI || typeof window.ReviewAPI.getOrCreateShop !== 'function') {
+		rampRow.textContent = '경사로 정보 없음';
+		curbRow.textContent = '계단/턱 정보 없음';
+		sourceRow.textContent = '데이터 소스가 연결되지 않았습니다.';
+		return;
+	}
+
+	try {
+		const shop = await window.ReviewAPI.getOrCreateShop(place);
+		const shopId = shop?._id || shop?.id;
+		const aiPred = shop?.ai_prediction || null;
+		if (aiPred) {
+			// place 객체에 AI 정보 반영 (사진/상태 재사용)
+			place.ai_prediction = aiPred;
+			if (aiPred.image_url) {
+				setPlacePhoto(aiPred.image_url, place.place_name);
+			}
+		}
+
+		let aiRamp = aiPred?.ramp;
+		let aiCurb = aiPred?.curb;
+		let aiSource = aiPred ? '휠도시 Vision AI가 판단하여 인증된 결과에요.' : '휠도시 Vision AI의 판단을 기다리는 중이에요.';
+
+		// 리뷰로부터 요약
+		let reviewRamp = null;
+		let reviewCurb = null;
+		let reviewerCount = 0;
+		if (shopId && typeof window.ReviewAPI.getReviewsByShop === 'function') {
+			const reviewsData = await window.ReviewAPI.getReviewsByShop(shopId);
+			const reviews = reviewsData?.items || [];
+			reviewerCount = reviews.length;
+			if (reviews.length > 0) {
+				const rampVotes = reviews.map(r => r?.ai_correct?.ramp).filter(v => v === true || v === false);
+				const curbVotes = reviews.map(r => r?.ai_correct?.curb).filter(v => v === true || v === false);
+				if (rampVotes.length > 0) {
+					reviewRamp = rampVotes.filter(v => v).length >= rampVotes.length / 2;
+				}
+				if (curbVotes.length > 0) {
+					reviewCurb = curbVotes.filter(v => v).length >= curbVotes.length / 2;
+				}
+			}
+		}
+
+		// 최종 표기: AI 우선, 없으면 리뷰, 둘 다 없으면 없음
+		const makeBadge = (val, label, invertBad = false) => {
+			if (val === true) {
+				return `<span class="badge ${invertBad ? 'bad' : 'good'}">${label} 있어요</span>`;
+			}
+			if (val === false) {
+				return `<span class="badge ${invertBad ? 'good' : 'bad'}">${label} 없어요</span>`;
+			}
+			return `<span class="badge wait">${label} 정보 없음</span>`;
+		};
+
+		const rampVal = aiRamp !== undefined && aiRamp !== null ? aiRamp : reviewRamp;
+		const curbVal = aiCurb !== undefined && aiCurb !== null ? aiCurb : reviewCurb;
+
+		rampRow.innerHTML = `${makeBadge(rampVal, '경사로')}`;
+		// 계단/턱은 있으면 불편(빨간), 없으면 좋음(초록)
+		curbRow.innerHTML = `${makeBadge(curbVal, '계단/턱', true)}`;
+
+		const sourceParts = [];
+		if (aiPred || !aiPred) {
+			sourceParts.push(aiSource);
+		}
+		if (reviewerCount > 0) {
+			sourceParts.push(`${reviewerCount}명의 리뷰어에게 인증된 결과에요.`);
+		}
+		if (!aiPred && reviewerCount === 0) {
+			sourceParts.push('아직 데이터가 없어요.');
+		}
+
+		sourceRow.innerHTML = sourceParts.join('<br>');
+	} catch (err) {
+		console.warn('[access-summary] 업데이트 실패:', err);
+		rampRow.textContent = '경사로 정보 없음';
+		curbRow.textContent = '계단/턱 정보 없음';
+		sourceRow.textContent = '데이터를 불러오지 못했습니다.';
+	}
+}
+
 // 다음 영업일 시간 찾기
 function getNextOpenTime(businessHours) {
 	if (!businessHours || !businessHours.dailyHours) {
@@ -548,6 +643,17 @@ function displayResults(data) {
 // }
 
 // 매장 상세 정보 표시
+function setPlacePhoto(imageUrl, placeName) {
+	const photoBox = document.getElementById('placePhoto');
+	if (!photoBox) return;
+
+	if (imageUrl) {
+		photoBox.innerHTML = `<img src="${imageUrl}" alt="${placeName || '매장 사진'}" style="object-fit: contain; width: 100%; height: auto;" onerror="this.parentNode.textContent='사진을 불러오지 못했습니다.'">`;
+	} else {
+		photoBox.textContent = '사진 준비중';
+	}
+}
+
 function showPlaceDetail(place, selectedMarker) {
 	// 검색창 비우기
 	document.getElementById('searchInput').value = '';
@@ -581,6 +687,10 @@ function showPlaceDetail(place, selectedMarker) {
 	
 	// 매장명
 	document.getElementById('placeTitle').textContent = place.place_name;
+
+	// 사진 표시 (AI 예측 이미지 또는 기타 이미지)
+	const initialImg = place?.ai_prediction?.image_url || place?.image_url || place?.photo_url;
+	setPlacePhoto(initialImg, place.place_name);
 	
 	// 카테고리 - 조건부 표시
 	var category = '카테고리 정보 없음';
@@ -612,6 +722,11 @@ function showPlaceDetail(place, selectedMarker) {
 	}
 	var reviewText = reviewCount >= 1000 ? '리뷰 999+' : '리뷰 ' + reviewCount;
 	document.getElementById('placeReviews').textContent = reviewText;
+
+	// 접근성 요약 업데이트 (AI/리뷰 기반)
+	if (typeof updateAccessSummary === 'function') {
+		updateAccessSummary(place);
+	}
 	
 	// 주소 표시 (크롤링한 정보 우선 사용)
 	document.getElementById('placeAddress').textContent = 
@@ -861,5 +976,3 @@ async function loadWebsiteInfo(placeId, place) {
 		console.error('[ERROR] 웹사이트 정보 로딩 실패:', error);
 	}
 }
-
-

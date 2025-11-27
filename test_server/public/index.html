@@ -5,6 +5,7 @@
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 	<title>휠도시</title>
 	<link rel="icon" type="image/png" href="/wheelcity.png">
+	<link rel="apple-touch-icon" href="/wheelcity.png">
 	<link rel="shortcut icon" type="image/png" href="/wheelcity.png">
 	<!-- 폰트 링크 -->
 	<link rel="preconnect" href="https://fonts.googleapis.com">
@@ -121,6 +122,50 @@
 		height: 100%;
 		fill: #666;
 	}
+	/* 접근성 요약 카드 */
+	.access-summary {
+		border: 1px solid #eee;
+		border-radius: 10px;
+		padding: 12px 14px;
+		margin: 10px 0;
+		background: #fafafa;
+		font-family: 'Inter', sans-serif;
+		font-size: 13px;
+		color: #333;
+	}
+	.access-summary h4 {
+		margin: 0 0 8px 0;
+		font-size: 14px;
+		font-weight: 700;
+		display: flex;
+		align-items: center;
+		gap: 6px;
+	}
+	.access-summary .access-row {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		margin: 4px 0;
+	}
+	.access-summary .badge {
+		display: inline-flex;
+		align-items: center;
+		gap: 4px;
+		padding: 4px 8px;
+		border-radius: 999px;
+		font-size: 12px;
+		border: 1px solid #ddd;
+		background: #fff;
+		color: #555;
+	}
+	.access-summary .badge.good { border-color: #00a86b; color: #00a86b; }
+	.access-summary .badge.bad { border-color: #f44; color: #f44; }
+	.access-summary .badge.wait { border-color: #999; color: #666; }
+	.access-summary .source {
+		font-size: 12px;
+		color: #666;
+		margin-top: 6px;
+	}
 	/* 자동완성 리스트 */
 	.search-suggestions {
 		position: absolute;
@@ -229,17 +274,25 @@
 	.place-detail-photo {
 		margin-top: 10px;
 		width: 100%;
-		height: 162px;
+		min-height: 160px;
+		max-height: 260px;
 		background: #f9f9f9;
 		border-radius: 8px;
-		display: flex;
-		align-items: center;
-		justify-content: center;
+		display: block;
+		padding: 6px;
 		color: #999;
 		font-family: 'Inter', sans-serif;
 		font-size: 14px;
 		border: 1px solid #e5e5e5;
 		flex-shrink: 0;
+	}
+	.place-detail-photo img {
+		width: 100%;
+		height: auto;
+		max-height: 248px;
+		object-fit: contain;
+		border-radius: 6px;
+		display: block;
 	}
 	.place-detail-accessibility {
 		margin-top: 16px;
@@ -799,6 +852,12 @@
 		</div>
 		<div class="place-detail-photo" id="placePhoto">
 			사진 준비중
+		</div>
+		<div class="access-summary" id="accessSummary" style="display:none;">
+			<h4>접근성 상태</h4>
+			<div class="access-row" id="accessRamp">경사로 정보 불러오는 중...</div>
+			<div class="access-row" id="accessCurb">계단/턱 정보 불러오는 중...</div>
+			<div class="source" id="accessSource"></div>
 		</div>
 		<div class="place-detail-accessibility" id="placeAccessibility">
 			<img src="/img/physical-disability.svg" alt="접근성" />
