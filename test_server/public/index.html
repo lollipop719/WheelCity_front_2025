@@ -540,6 +540,71 @@
 		color: #000;
 		font-weight: 500;
 	}
+
+	/* 접근성 필터 확장 패널 (2번째 줄) */
+	.filter-panel {
+		width: 100%;
+		margin-top: 12px;
+		padding-top: 12px;
+		border-top: 1px solid #f0f0f0;
+		background: transparent;
+		border-radius: 0;
+		border-left: none;
+		border-right: none;
+		border-bottom: none;
+		box-shadow: none;
+		padding-left: 0;
+		padding-right: 0;
+		padding-bottom: 0;
+		box-sizing: border-box;
+		display: none; /* 필터 아이콘 클릭 시 block으로 토글 */
+	}
+	.filter-panel-header {
+		display: block;
+		margin-bottom: 6px;
+		font-family: 'Inter', sans-serif;
+		font-size: 13px;
+		color: #555;
+		font-weight: 500;
+	}
+	.filter-panel-chips {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 8px;
+	}
+	.filter-chip {
+		border-radius: 999px;
+		border: 1px solid #ddd;
+		background: #fff;
+		padding: 6px 12px;
+		font-size: 13px;
+		font-family: 'Inter', sans-serif;
+		color: #555;
+		cursor: pointer;
+		transition: all 0.2s;
+		display: flex;
+		align-items: center;
+		gap: 4px;
+	}
+	.filter-chip:hover {
+		background: #f9f9f9;
+	}
+	.filter-chip.active {
+		background: #FEE500;
+		border-color: #FEE500;
+		color: #000;
+		font-weight: 500;
+	}
+	.filter-panel-reset {
+		margin-top: 8px;
+		margin-left: auto;
+		background: transparent;
+		border: none;
+		font-size: 12px;
+		color: #666;
+		cursor: pointer;
+		text-decoration: underline;
+	}
 	.result-list {
 		flex: 1;
 		overflow-y: auto;
@@ -936,6 +1001,27 @@
 				<img src="/img/wheelchair-icon.svg" alt="휠체어" style="width: 13.6px; height: 17px; opacity: 0.8;">
 				<span>화장실</span>
 			</button>
+
+			<!-- 접근성 필터 확장 패널 -->
+			<div class="filter-panel" id="accessibilityFilterPanel">
+				<div class="filter-panel-header">
+					<span>접근성 필터</span>
+				</div>
+				<div class="filter-panel-chips">
+					<button class="filter-chip" data-filter="parking">
+						<img src="/img/wheelchair-icon.svg" alt="휠체어" style="width: 13.6px; height: 17px; opacity: 0.8;">
+						<span>주차장</span>
+					</button>
+					<button class="filter-chip" data-filter="lowStep">
+						<img src="/img/wheelchair-icon.svg" alt="휠체어" style="width: 13.6px; height: 17px; opacity: 0.8;">
+						<span>낮은 문턱</span>
+					</button>
+					<button class="filter-chip" data-filter="braille">
+						<img src="/img/wheelchair-icon.svg" alt="휠체어" style="width: 13.6px; height: 17px; opacity: 0.8;">
+						<span>점자블럭</span>
+					</button>
+				</div>
+			</div>
 
 			<div class="place-detail-close search-results-close" id="searchResultsClose">×</div>
 		</div>

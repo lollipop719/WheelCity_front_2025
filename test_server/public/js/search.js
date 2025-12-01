@@ -5,7 +5,10 @@ let globalSearchResults = [];
 let activeFilters = {
 	open: false,
 	ramp: false,
-	wheelchair: false
+	wheelchair: false,
+	parking: false,
+	lowStep: false,
+	braille: false,
 };
 
 // 퀵 카테고리 검색 (음식점/카페/편의점 버튼)
@@ -876,6 +879,30 @@ function applyFilters() {
       }
     }
 
+    // 주차장 필터
+    if (activeFilters.parking) {
+      const accessibilityInfo = place.accessibilityInfo || '';
+      if (!accessibilityInfo.includes('주차장')) {
+        return false;
+      }
+    }
+
+    // 낮은 문턱 필터
+    if (activeFilters.lowStep) {
+      const accessibilityInfo = place.accessibilityInfo || '';
+      if (!accessibilityInfo.includes('낮은 문턱')) {
+        return false;
+      }
+    }
+
+    // 점자블럭 필터
+    if (activeFilters.braille) {
+      const accessibilityInfo = place.accessibilityInfo || '';
+      if (!accessibilityInfo.includes('점자블럭')) {
+        return false;
+      }
+    }
+
     return true;
   });
 
@@ -934,15 +961,27 @@ window.resetFilters = function() {
   activeFilters = {
     open: false,
     ramp: false,
-    wheelchair: false
+    wheelchair: false,
+    parking: false,
+    lowStep: false,
+    braille: false,
   };
   
-  // 모든 필터 버튼의 active 클래스 제거
+  // 모든 필터 버튼/칩의 active 클래스 제거
   document.querySelectorAll('.filter-btn').forEach(btn => {
     if (btn.dataset.filter !== 'type') {
       btn.classList.remove('active');
     }
   });
+  document.querySelectorAll('.filter-chip').forEach(chip => {
+    chip.classList.remove('active');
+  });
+
+  // 필터 패널 닫기
+  const panel = document.getElementById('accessibilityFilterPanel');
+  if (panel) {
+    panel.style.display = 'none';
+  }
   
   // 필터 적용
   applyFilters();

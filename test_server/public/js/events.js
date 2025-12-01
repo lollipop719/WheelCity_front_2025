@@ -77,8 +77,13 @@ document.querySelectorAll('.filter-btn').forEach(btn => {
 	btn.addEventListener('click', function() {
 		const filterType = this.dataset.filter;
 		
-		// type 필터는 제외 (필터 아이콘 버튼)
+		// type 필터 (필터 아이콘 버튼)는 패널 토글
 		if (filterType === 'type') {
+			const panel = document.getElementById('accessibilityFilterPanel');
+			if (panel) {
+				const isOpen = panel.style.display === 'block';
+				panel.style.display = isOpen ? 'none' : 'block';
+			}
 			return;
 		}
 
@@ -93,6 +98,22 @@ document.querySelectorAll('.filter-btn').forEach(btn => {
 		console.log('Filter:', filterType, 'Active:', this.classList.contains('active'));
 	});
 });
+
+// 확장 패널 내 접근성 필터 칩 클릭
+document.querySelectorAll('.filter-chip').forEach(chip => {
+	chip.addEventListener('click', function() {
+		const filterType = this.dataset.filter;
+
+		this.classList.toggle('active');
+
+		if (typeof window.toggleFilter === 'function') {
+			window.toggleFilter(filterType);
+		}
+
+		console.log('Chip Filter:', filterType, 'Active:', this.classList.contains('active'));
+	});
+});
+
 
 // 탭 클릭 이벤트
 document.querySelectorAll('.place-detail-tab').forEach(tab => {
