@@ -822,23 +822,33 @@
 	}
 		/* === 모바일 전용 레이아웃 조정 (추가) === */
 		@media (max-width: 768px) {
-		/* 검색창을 화면 가로 중앙에 크게 배치 */
+		/* 검색창을 왼쪽 정렬로 배치 */
 			.search-box {
-				left: 50%;
+				left: 16px;                           /* 왼쪽 여백 */
 				top: 70px;                            /* 필요하면 60~80 사이로 미세조정 */
 				width: calc(100% - 32px);             /* 양 옆 16px 여백 */
 				max-width: 480px;
-				transform: translateX(-50%);          /* 가운데 정렬 */
+				transform: none;                      /* 가운데 정렬 제거 */
 				border-radius: 999px;
+			}
+
+			/* 검색 추천 리스트도 검색창과 같은 위치에 왼쪽 정렬 */
+			.search-suggestions {
+				left: 16px;                          /* 검색창과 같은 왼쪽 여백 */
+				top: 115px;                          /* 검색창 바로 아래 (70px + 45px) */
+				width: calc(100% - 32px);
+				max-width: 480px;
+				transform: none;                     /* 가운데 정렬 제거 */
 			}
 
 			.quick-search-container {
                 top: 125px; /* 모바일 검색창(70px + 높이) 아래 */
-                left: 50%;
-                transform: translateX(-50%); /* 가운데 정렬 */
-                width: 100%;
-                justify-content: center; /* 버튼들을 가운데로 모음 */
-                padding: 0 16px; /* 좌우 여백 */
+                left: 16px; /* 검색창과 같은 왼쪽 여백 */
+                transform: none; /* 가운데 정렬 제거 */
+                width: calc(100% - 32px); /* 검색창과 동일한 너비 */
+                max-width: 480px; /* 검색창과 동일한 최대 너비 */
+                justify-content: flex-start; /* 버튼들을 왼쪽으로 정렬 */
+                padding: 0; /* 패딩 제거 */
                 box-sizing: border-box;
                 /* 가로 스크롤이 필요할 경우를 대비한 설정 */
                 overflow-x: auto; 

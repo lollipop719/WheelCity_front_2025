@@ -46,6 +46,9 @@ function initUserLocationOnMobile() {
 
     navigator.geolocation.getCurrentPosition(
         function (pos) {
+            // 위치 가져오기 성공 플래그 설정 (전역)
+            window.hasLocationSuccess = true;
+            
             const lat = pos.coords.latitude;
             const lng = pos.coords.longitude;
             const loc = new kakao.maps.LatLng(lat, lng);
@@ -71,6 +74,11 @@ function initUserLocationOnMobile() {
             console.log("📍 모바일 내 위치 적용:", lat, lng);
         },
         function (err) {
+            // 이미 위치를 성공적으로 가져왔다면 에러 로그만 남기고 무시
+            if (window.hasLocationSuccess) {
+                console.log("위치는 이미 성공적으로 가져왔으므로 에러를 무시합니다.");
+                return;
+            }
             console.warn("위치 정보 가져오기 실패:", err);
         },
         {
