@@ -1,1 +1,0 @@
-export { IphoneProWrapper } from "./IphoneProWrapper";

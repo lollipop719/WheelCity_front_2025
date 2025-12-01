@@ -1,1 +1,0 @@
-export { MaleMemojis } from "./MaleMemojis";
