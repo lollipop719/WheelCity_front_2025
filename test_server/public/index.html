@@ -504,7 +504,7 @@
 		flex-direction: column;
 	}
 	.result-filters {
-		padding: 16px 54px 4px 26px; /* 오른쪽 닫기 버튼 공간 확보 */
+		padding: 16px 54px 4px 23px; /* 오른쪽 닫기 버튼 공간 확보 */
 		display: flex;
 		gap: 8px;
 		flex-wrap: wrap;
@@ -544,9 +544,8 @@
 	/* 접근성 필터 확장 패널 (2번째 줄) */
 	.filter-panel {
 		width: 100%;
-		margin-top: 12px;
-		padding-top: 12px;
-		border-top: 1px solid #f0f0f0;
+		margin-top: 0px;
+		padding-top: 2px;
 		background: transparent;
 		border-radius: 0;
 		border-left: none;
@@ -1014,9 +1013,6 @@
 
 			<!-- 접근성 필터 확장 패널 -->
 			<div class="filter-panel" id="accessibilityFilterPanel">
-				<div class="filter-panel-header">
-					<span>접근성 필터</span>
-				</div>
 				<div class="filter-panel-chips">
 					<button class="filter-chip" data-filter="parking">
 						<img src="/img/wheelchair-icon.svg" alt="휠체어" style="width: 13.6px; height: 17px; opacity: 0.8;">
