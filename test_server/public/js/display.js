@@ -492,6 +492,15 @@ function displayResults(data) {
 		}
 		var reviewText = place.reviewCount >= 1000 ? '리뷰 999+' : '리뷰 ' + place.reviewCount;
 		
+		// 상세 페이지와 동일한 이미지 URL 로직 사용
+		var imageUrl = place?.ai_prediction?.image_url || place?.image_url || place?.photo_url;
+		
+		// 이미지가 있으면 표시, 없으면 이미지 영역 자체를 표시하지 않음
+		var thumbnailHtml = '';
+		if (imageUrl) {
+			thumbnailHtml = `<img src="${imageUrl}" alt="${place.place_name}" class="result-thumbnail" onerror="this.style.display='none'">`;
+		}
+		
 		resultsHtml += `
 			<div class="result-item" data-index="${index}">
 				<div class="result-content">
@@ -511,7 +520,7 @@ function displayResults(data) {
 							</div>
 						</div>
 					</div>
-					<img src="${place.place_url ? 'https://via.placeholder.com/60' : 'https://via.placeholder.com/60'}" alt="${place.place_name}" class="result-thumbnail" onerror="this.src='https://via.placeholder.com/60'">
+					${thumbnailHtml}
 				</div>
 			</div>
 		`;
