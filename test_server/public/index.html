@@ -806,7 +806,18 @@
 	}
 
 		/* === 리뷰 모드 (상단 정보는 항상 표시) === */
-	/* 리뷰 탭에서도 사진, 접근성 정보 등 상단 부분은 동일하게 표시 */
+	/* === 리뷰 모드 (상단 정보 숨김) === */
+	.place-detail.review-mode .place-detail-photo,
+	.place-detail.review-mode .place-detail-accessibility {
+		display: none !important;
+	}
+
+	/* 리뷰 탭일 때 헤더의 아래쪽 여백을 줄여서 더 넓게 씀 */
+	.place-detail.review-mode .place-detail-header {
+		margin-bottom: 0;
+	}
+
+
 
 	/* 위쪽으로 향하는 삼각형 (heading 기준으로 회전) */
 	.my-location-marker-inner::after {
